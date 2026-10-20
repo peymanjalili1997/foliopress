@@ -41,6 +41,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
   selectedBlock,
   onUpdateTextStyle,
   onAddBlock,
+  onAiPolishText,
   defaultHeadingFont,
 }) => {
   const activeStyle: TextStyle = selectedBlock?.textStyle || {
