@@ -50,7 +50,9 @@ import {
   PortfolioBlock,
   PortfolioPage,
   TextStyle,
+  TextTargetField,
 } from './types/portfolio';
+import { loadGoogleFont } from './utils/googleFonts';
 
 const STORAGE_KEY = 'foliopress_portfolio_state_v1';
 
@@ -89,6 +91,7 @@ export default function App() {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
     () => pages[0]?.blocks[0]?.id || null
   );
+  const [activeTextTarget, setActiveTextTarget] = useState<TextTargetField>('primary');
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('element');
   const [workspaceMode, setWorkspaceMode] = useState<'single' | 'spread' | 'preview'>('single');
   const [canvasZoom, setCanvasZoom] = useState<number>(0.78);
@@ -157,6 +160,21 @@ export default function App() {
     }
   }, [pages, globalSettings]);
 
+  // Dynamic Google Fonts Auto-Loader for loaded portfolio and active pages
+  useEffect(() => {
+    if (globalSettings.headingFont) loadGoogleFont(globalSettings.headingFont);
+    if (globalSettings.bodyFont) loadGoogleFont(globalSettings.bodyFont);
+    if (globalSettings.monoFont) loadGoogleFont(globalSettings.monoFont);
+
+    pages.forEach((page) => {
+      page.blocks.forEach((block) => {
+        if (block.textStyle?.fontFamily) loadGoogleFont(block.textStyle.fontFamily);
+        if (block.secondaryTextStyle?.fontFamily) loadGoogleFont(block.secondaryTextStyle.fontFamily);
+        if (block.kickerTextStyle?.fontFamily) loadGoogleFont(block.kickerTextStyle.fontFamily);
+      });
+    });
+  }, [pages, globalSettings.headingFont, globalSettings.bodyFont, globalSettings.monoFont]);
+
   const activePageIndex = Math.max(
     0,
     pages.findIndex((p) => p.id === activePageId)
@@ -202,6 +220,9 @@ export default function App() {
     setSelectedBlockId(blockId);
     if (blockId) {
       setInspectorTab('element');
+      if (blockId !== selectedBlockId) {
+        setActiveTextTarget('primary');
+      }
     }
   };
 
@@ -225,12 +246,46 @@ export default function App() {
     );
   };
 
-  // Update text style of currently selected block
-  const handleUpdateTextStyle = (patch: Partial<TextStyle>) => {
+  // Update text style of currently selected block for specific target layer
+  const handleUpdateTextStyle = (
+    patch: Partial<TextStyle>,
+    target: TextTargetField = activeTextTarget
+  ) => {
     if (!selectedBlock) return;
-    handleUpdateBlock(selectedBlock.id, {
-      textStyle: { ...selectedBlock.textStyle, ...patch },
-    });
+    if (patch.fontFamily) {
+      loadGoogleFont(patch.fontFamily);
+    }
+
+    if (target === 'kicker') {
+      const currentKicker = selectedBlock.kickerTextStyle || {
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 11,
+        fontWeight: 500,
+        color: '#78716c',
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+      };
+      handleUpdateBlock(selectedBlock.id, {
+        kickerTextStyle: { ...currentKicker, ...patch },
+      });
+    } else if (target === 'secondary') {
+      const currentSec = selectedBlock.secondaryTextStyle || {
+        fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
+        fontSize: 14,
+        fontWeight: 400,
+        lineHeight: 1.5,
+        color: '#57534e',
+        letterSpacing: 0,
+        textTransform: 'none',
+      };
+      handleUpdateBlock(selectedBlock.id, {
+        secondaryTextStyle: { ...currentSec, ...patch },
+      });
+    } else {
+      handleUpdateBlock(selectedBlock.id, {
+        textStyle: { ...selectedBlock.textStyle, ...patch },
+      });
+    }
   };
 
   // AI Polish Text Function
@@ -663,6 +718,10 @@ export default function App() {
     bodyFont: string,
     monoFont: string
   ) => {
+    loadGoogleFont(headingFont);
+    loadGoogleFont(bodyFont);
+    loadGoogleFont(monoFont);
+
     setGlobalSettings((prev) => ({
       ...prev,
       headingFont,
@@ -684,6 +743,22 @@ export default function App() {
                 ? monoFont
                 : bodyFont,
           },
+          ...(block.secondaryTextStyle
+            ? {
+                secondaryTextStyle: {
+                  ...block.secondaryTextStyle,
+                  fontFamily: bodyFont,
+                },
+              }
+            : {}),
+          ...(block.kickerTextStyle
+            ? {
+                kickerTextStyle: {
+                  ...block.kickerTextStyle,
+                  fontFamily: monoFont,
+                },
+              }
+            : {}),
         })),
       }))
     );
@@ -864,6 +939,8 @@ export default function App() {
         <div className="no-print shrink-0">
           <TextFormatToolbar
             selectedBlock={selectedBlock}
+            activeTextTarget={activeTextTarget}
+            onSelectTextTarget={setActiveTextTarget}
             onUpdateTextStyle={handleUpdateTextStyle}
             onAddBlock={handleAddBlock}
             onAiPolishText={handleAiPolishText}
@@ -1317,6 +1394,8 @@ export default function App() {
                   totalPages={pages.length}
                   globalSettings={globalSettings}
                   selectedBlockId={selectedBlockId}
+                  activeTextTarget={activeTextTarget}
+                  onSelectTextTarget={setActiveTextTarget}
                   onSelectBlock={handleSelectBlock}
                   onUpdateBlock={handleUpdateBlock}
                   onMoveBlock={handleMoveBlock}
@@ -1337,6 +1416,8 @@ export default function App() {
             onTabChange={setInspectorTab}
             currentPage={currentPage}
             selectedBlock={selectedBlock}
+            activeTextTarget={activeTextTarget}
+            onSelectTextTarget={setActiveTextTarget}
             globalSettings={globalSettings}
             onUpdateBlock={handleUpdateBlock}
             onUpdateTextStyle={handleUpdateTextStyle}

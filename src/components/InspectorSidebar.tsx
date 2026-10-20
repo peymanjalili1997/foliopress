@@ -30,7 +30,10 @@ import {
   PortfolioBlock,
   PortfolioPage,
   TextStyle,
+  TextTargetField,
 } from '../types/portfolio';
+import { GoogleFontPicker } from './GoogleFontPicker';
+import { loadGoogleFont } from '../utils/googleFonts';
 
 export type InspectorTab = 'element' | 'page' | 'global';
 
@@ -39,9 +42,11 @@ interface InspectorSidebarProps {
   onTabChange: (tab: InspectorTab) => void;
   currentPage: PortfolioPage;
   selectedBlock: PortfolioBlock | null;
+  activeTextTarget?: TextTargetField;
+  onSelectTextTarget?: (target: TextTargetField) => void;
   globalSettings: GlobalDocumentSettings;
   onUpdateBlock: (blockId: string, patch: Partial<PortfolioBlock>) => void;
-  onUpdateTextStyle: (patch: Partial<TextStyle>) => void;
+  onUpdateTextStyle: (patch: Partial<TextStyle>, target?: TextTargetField) => void;
   onUpdateImageStyle: (patch: Partial<ImageStyle>) => void;
   onUpdatePage: (patch: Partial<PortfolioPage>) => void;
   onApplyTemplateToPage: (templateId: PageTemplateId) => void;
@@ -55,6 +60,8 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   onTabChange,
   currentPage,
   selectedBlock,
+  activeTextTarget = 'primary',
+  onSelectTextTarget,
   globalSettings,
   onUpdateBlock,
   onUpdateTextStyle,
@@ -107,6 +114,73 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
     borderRadius: 0,
     showBorder: false,
   };
+
+  // Determine if selected block has multiple text layers
+  const multiTextTargets: { id: TextTargetField; label: string }[] = [];
+  if (selectedBlock) {
+    if (selectedBlock.type === 'heading') {
+      multiTextTargets.push(
+        { id: 'kicker', label: 'Kicker' },
+        { id: 'primary', label: 'Headline' },
+        { id: 'secondary', label: 'Subtitle' }
+      );
+    } else if (selectedBlock.type === 'pull-quote') {
+      multiTextTargets.push(
+        { id: 'primary', label: 'Quote Body' },
+        { id: 'kicker', label: 'Attribution / Author' }
+      );
+    } else if (selectedBlock.type === 'two-column-text') {
+      multiTextTargets.push(
+        { id: 'primary', label: 'Left Column' },
+        { id: 'secondary', label: 'Right Column' }
+      );
+    }
+  }
+
+  const getActiveStyle = (): TextStyle => {
+    if (!selectedBlock) {
+      return {
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        fontSize: 14,
+        fontWeight: 400,
+        color: '#1c1917',
+        lineHeight: 1.5,
+        letterSpacing: 0,
+        textTransform: 'none',
+      };
+    }
+
+    if (activeTextTarget === 'kicker') {
+      return (
+        selectedBlock.kickerTextStyle || {
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
+          fontWeight: 500,
+          color: '#78716c',
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+        }
+      );
+    }
+
+    if (activeTextTarget === 'secondary') {
+      return (
+        selectedBlock.secondaryTextStyle || {
+          fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
+          fontSize: 14,
+          fontWeight: 400,
+          lineHeight: 1.5,
+          color: '#57534e',
+          letterSpacing: 0,
+          textTransform: 'none',
+        }
+      );
+    }
+
+    return selectedBlock.textStyle;
+  };
+
+  const activeStyle = getActiveStyle();
 
   return (
     <aside className="w-80 bg-white border-l border-stone-200/90 flex flex-col h-full shrink-0 select-none">
@@ -434,47 +508,235 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                   </div>
                 )}
 
-                {/* English Font Family Gallery for Selected Block */}
-                <div className="space-y-3">
+                {/* Typography & Styling Section */}
+                <div className="space-y-4 pt-4 border-t border-stone-200">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
                       <Type className="w-3.5 h-3.5 text-stone-500" />
-                      <span>English Typeface Selection</span>
+                      <span>Typography & Styling</span>
                     </h3>
-                    <span className="text-[11px] text-stone-400 tabular-nums">
-                      {selectedBlock.textStyle.fontSize}px
+                    <span className="text-[11px] text-stone-500 tabular-nums font-mono">
+                      {activeStyle.fontSize}px
                     </span>
                   </div>
 
-                  <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-                    {ENGLISH_FONTS.map((font) => {
-                      const isCurrent = selectedBlock.textStyle.fontFamily === font.family;
-                      return (
-                        <button
-                          key={font.name}
-                          type="button"
-                          onClick={() => onUpdateTextStyle({ fontFamily: font.family })}
-                          className={`w-full text-left px-3 py-2 rounded-lg border transition-all flex items-center justify-between gap-2 ${
-                            isCurrent
-                              ? 'border-stone-900 bg-stone-900/5 text-stone-950'
-                              : 'border-stone-200/80 hover:border-stone-300 text-stone-800'
-                          }`}
-                        >
-                          <div className="min-w-0">
-                            <div
-                              style={{ fontFamily: font.family }}
-                              className="text-sm font-medium truncate"
-                            >
-                              {font.name}
+                  {/* Multi-Text Layer Switcher if Block contains multiple text fields */}
+                  {multiTextTargets.length > 0 && (
+                    <div className="p-2 bg-stone-100 rounded-lg space-y-1.5 border border-stone-200/80">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+                          Editing Layer
+                        </span>
+                        <span className="text-[10px] font-medium text-stone-800">
+                          {multiTextTargets.find((t) => t.id === activeTextTarget)?.label || 'Headline'}
+                        </span>
+                      </div>
+                      <div className="grid grid-flow-col auto-cols-fr gap-1 bg-stone-200/60 p-0.5 rounded-md">
+                        {multiTextTargets.map((tgt) => (
+                          <button
+                            key={tgt.id}
+                            type="button"
+                            onClick={() => onSelectTextTarget?.(tgt.id)}
+                            className={`px-2 py-1 text-[11px] font-medium rounded transition-all text-center truncate ${
+                              activeTextTarget === tgt.id
+                                ? 'bg-stone-900 text-white shadow-2xs font-semibold'
+                                : 'text-stone-700 hover:text-stone-900 hover:bg-white/70'
+                            }`}
+                          >
+                            {tgt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Online Google Font Selector Popover */}
+                  <div>
+                    <label className="block text-[11px] text-stone-500 mb-1">
+                      Online Google Font Selector
+                    </label>
+                    <GoogleFontPicker
+                      value={activeStyle.fontFamily}
+                      onChange={async (family) => {
+                        await loadGoogleFont(family);
+                        onUpdateTextStyle({ fontFamily: family }, activeTextTarget);
+                      }}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Font Size & Weight */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex justify-between text-[11px] text-stone-500 mb-1">
+                        <span>Font Size</span>
+                        <span className="tabular-nums font-mono text-stone-900">{activeStyle.fontSize}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={9}
+                        max={84}
+                        value={activeStyle.fontSize}
+                        onChange={(e) =>
+                          onUpdateTextStyle({ fontSize: Number(e.target.value) }, activeTextTarget)
+                        }
+                        className="w-full accent-stone-900 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] text-stone-500 mb-1">
+                        <span>Weight</span>
+                        <span className="tabular-nums font-mono text-stone-900">{activeStyle.fontWeight}</span>
+                      </div>
+                      <select
+                        value={activeStyle.fontWeight}
+                        onChange={(e) =>
+                          onUpdateTextStyle({ fontWeight: Number(e.target.value) }, activeTextTarget)
+                        }
+                        className="w-full h-7 px-2 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-900"
+                      >
+                        <option value={300}>300 Light</option>
+                        <option value={400}>400 Regular</option>
+                        <option value={500}>500 Medium</option>
+                        <option value={600}>600 Semi-Bold</option>
+                        <option value={700}>700 Bold</option>
+                        <option value={800}>800 Extra Bold</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Line Height & Letter Spacing */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex justify-between text-[11px] text-stone-500 mb-1">
+                        <span>Line Height</span>
+                        <span className="tabular-nums font-mono text-stone-900">
+                          {activeStyle.lineHeight || 1.4}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.8}
+                        max={2.4}
+                        step={0.05}
+                        value={activeStyle.lineHeight || 1.4}
+                        onChange={(e) =>
+                          onUpdateTextStyle({ lineHeight: Number(e.target.value) }, activeTextTarget)
+                        }
+                        className="w-full accent-stone-900 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] text-stone-500 mb-1">
+                        <span>Tracking</span>
+                        <span className="tabular-nums font-mono text-stone-900">
+                          {activeStyle.letterSpacing || 0}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-1}
+                        max={8}
+                        step={0.5}
+                        value={activeStyle.letterSpacing || 0}
+                        onChange={(e) =>
+                          onUpdateTextStyle({ letterSpacing: Number(e.target.value) }, activeTextTarget)
+                        }
+                        className="w-full accent-stone-900 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Uppercase & Color */}
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateTextStyle(
+                          {
+                            textTransform:
+                              activeStyle.textTransform === 'uppercase' ? 'none' : 'uppercase',
+                          },
+                          activeTextTarget
+                        )
+                      }
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-all flex items-center gap-1.5 ${
+                        activeStyle.textTransform === 'uppercase'
+                          ? 'border-stone-900 bg-stone-900 text-white shadow-2xs'
+                          : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-stone-300'
+                      }`}
+                    >
+                      <span className="font-mono text-[10px] uppercase font-bold tracking-wider">AA</span>
+                      <span>ALL CAPS</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-stone-500">Color</span>
+                      <div className="flex items-center gap-1">
+                        {['#1c1917', '#44403c', '#78716c', '#2563eb', '#b45309'].map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => onUpdateTextStyle({ color: c }, activeTextTarget)}
+                            style={{ backgroundColor: c }}
+                            className={`w-5 h-5 rounded-full border transition-all ${
+                              activeStyle.color === c
+                                ? 'ring-2 ring-stone-900 ring-offset-1 scale-110'
+                                : 'border-stone-300 hover:scale-105'
+                            }`}
+                          />
+                        ))}
+                        <input
+                          type="color"
+                          value={activeStyle.color || '#1c1917'}
+                          onChange={(e) =>
+                            onUpdateTextStyle({ color: e.target.value }, activeTextTarget)
+                          }
+                          className="w-6 h-6 p-0 border border-stone-200 rounded cursor-pointer ml-1"
+                          title="Custom Color"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Font Family Quick Gallery */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="block text-[11px] text-stone-500">
+                      Curated Google Typography Directory
+                    </label>
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                      {ENGLISH_FONTS.map((font) => {
+                        const isCurrent = activeStyle.fontFamily === font.family;
+                        return (
+                          <button
+                            key={font.name}
+                            type="button"
+                            onClick={async () => {
+                              await loadGoogleFont(font.family);
+                              onUpdateTextStyle({ fontFamily: font.family }, activeTextTarget);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-lg border transition-all flex items-center justify-between gap-2 ${
+                              isCurrent
+                                ? 'border-stone-900 bg-stone-900/5 text-stone-950 font-medium'
+                                : 'border-stone-200/80 hover:border-stone-300 text-stone-800'
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <div
+                                style={{ fontFamily: font.family }}
+                                className="text-sm font-medium truncate"
+                              >
+                                {font.name}
+                              </div>
+                              <div className="text-[10px] text-stone-400 truncate">
+                                {font.category} · {font.sample}
+                              </div>
                             </div>
-                            <div className="text-[10px] text-stone-400 truncate">
-                              {font.category} · {font.sample}
-                            </div>
-                          </div>
-                          {isCurrent && <Check className="w-3.5 h-3.5 text-stone-900 shrink-0" />}
-                        </button>
-                      );
-                    })}
+                            {isCurrent && <Check className="w-3.5 h-3.5 text-stone-900 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </>
@@ -866,13 +1128,18 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                     <button
                       key={pair.id}
                       type="button"
-                      onClick={() =>
+                      onClick={async () => {
+                        await Promise.all([
+                          loadGoogleFont(pair.headingFont),
+                          loadGoogleFont(pair.bodyFont),
+                          loadGoogleFont(pair.monoFont),
+                        ]);
                         onApplyGlobalFontsToAllPages(
                           pair.headingFont,
                           pair.bodyFont,
                           pair.monoFont
-                        )
-                      }
+                        );
+                      }}
                       className={`w-full p-2.5 rounded-lg border text-left transition-all ${
                         isCurrent
                           ? 'border-stone-900 bg-stone-900/5'
@@ -889,6 +1156,67 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Custom Global Google Fonts */}
+              <div className="pt-3 space-y-2.5 border-t border-stone-200/80">
+                <div className="text-xs font-semibold text-stone-900">
+                  Custom Global Google Fonts
+                </div>
+                <div>
+                  <label className="block text-[11px] text-stone-500 mb-1">
+                    Primary Headline Typeface
+                  </label>
+                  <GoogleFontPicker
+                    value={globalSettings.headingFont}
+                    onChange={(font) => {
+                      loadGoogleFont(font);
+                      onUpdateGlobalSettings({ headingFont: font });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-stone-500 mb-1">
+                    Body Prose Typeface
+                  </label>
+                  <GoogleFontPicker
+                    value={globalSettings.bodyFont}
+                    onChange={(font) => {
+                      loadGoogleFont(font);
+                      onUpdateGlobalSettings({ bodyFont: font });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-stone-500 mb-1">
+                    Monospace & Plate Caption Typeface
+                  </label>
+                  <GoogleFontPicker
+                    value={globalSettings.monoFont}
+                    onChange={(font) => {
+                      loadGoogleFont(font);
+                      onUpdateGlobalSettings({ monoFont: font });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    onApplyGlobalFontsToAllPages(
+                      globalSettings.headingFont,
+                      globalSettings.bodyFont,
+                      globalSettings.monoFont
+                    )
+                  }
+                  className="w-full py-2 px-3 bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium rounded-lg transition-colors shadow-2xs flex items-center justify-center gap-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Apply Global Fonts to All Pages & Blocks</span>
+                </button>
               </div>
             </div>
 

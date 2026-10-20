@@ -28,6 +28,7 @@ import {
   PortfolioPage,
   SpecItem,
   TextStyle,
+  TextTargetField,
 } from '../types/portfolio';
 import { MockupFrame } from './MockupFrames';
 
@@ -71,6 +72,8 @@ interface PageCanvasProps {
   totalPages: number;
   globalSettings: GlobalDocumentSettings;
   selectedBlockId: string | null;
+  activeTextTarget?: TextTargetField;
+  onSelectTextTarget?: (target: TextTargetField) => void;
   onSelectBlock: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, patch: Partial<PortfolioBlock>) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
@@ -119,6 +122,8 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
   totalPages,
   globalSettings,
   selectedBlockId,
+  activeTextTarget = 'primary',
+  onSelectTextTarget,
   onSelectBlock,
   onUpdateBlock,
   onMoveBlock,
@@ -256,7 +261,8 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
     onChange: (val: string) => void,
     style: React.CSSProperties,
     placeholder: string,
-    multiline = true
+    multiline = true,
+    onFocus?: () => void
   ) => {
     if (isExportMode) {
       return (
@@ -273,6 +279,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           dir="ltr"
           value={value}
           placeholder={placeholder}
+          onFocus={onFocus}
           onChange={(e) => onChange(e.target.value)}
           style={style}
           className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 p-0 m-0"
@@ -294,6 +301,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           dir="ltr"
           value={value}
           placeholder={placeholder}
+          onFocus={onFocus}
           onChange={(e) => onChange(e.target.value)}
           style={style}
           className="absolute inset-0 w-full h-full resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 p-0 m-0"
@@ -412,62 +420,134 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
 
   const renderBlockContent = (block: PortfolioBlock) => {
     switch (block.type) {
-      case 'heading':
+      case 'heading': {
+        const isBlockSelected = !isExportMode && selectedBlockId === block.id;
+
+        const kickerStyle = buildTextCss(
+          block.kickerTextStyle || {
+            fontFamily: globalSettings.monoFont,
+            fontSize: 10.5,
+            fontWeight: 500,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            letterSpacing: 0.12,
+            textTransform: 'uppercase',
+            color: accentCol,
+            lineHeight: 1.4,
+            textAlign: block.textStyle?.textAlign || 'left',
+          },
+          accentCol
+        );
+
+        const headlineStyle = buildTextCss(block.textStyle, pageInk);
+
+        const subtitleStyle = buildTextCss(
+          block.secondaryTextStyle || {
+            fontFamily: globalSettings.bodyFont,
+            fontSize: 14,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            lineHeight: 1.55,
+            letterSpacing: 0,
+            textTransform: 'none',
+            color: mutedInk,
+            textAlign: block.textStyle?.textAlign || 'left',
+          },
+          mutedInk
+        );
+
         return (
           <div className="flex flex-col gap-2">
             {(block.kicker !== undefined || !isExportMode) &&
               (!isExportMode || (block.kicker && block.kicker.trim().length > 0)) && (
-                <div>
+                <div
+                  onClick={(e) => {
+                    if (!isExportMode) {
+                      e.stopPropagation();
+                      onSelectBlock(block.id);
+                      onSelectTextTarget?.('kicker');
+                    }
+                  }}
+                  className={`transition-all rounded-xs ${
+                    isBlockSelected && activeTextTarget === 'kicker'
+                      ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                      : ''
+                  }`}
+                >
                   {renderEditableText(
                     block.kicker || '',
                     (val) => onUpdateBlock(block.id, { kicker: val }),
-                    {
-                      fontFamily: globalSettings.monoFont,
-                      fontSize: '10.5px',
-                      fontWeight: 500,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: accentCol,
-                      lineHeight: 1.4,
-                      textAlign: block.textStyle.textAlign,
-                    },
+                    kickerStyle,
                     'SECTION KICKER / INDEX...',
-                    false
+                    false,
+                    () => {
+                      onSelectBlock(block.id);
+                      onSelectTextTarget?.('kicker');
+                    }
                   )}
                 </div>
               )}
 
-            <div>
+            <div
+              onClick={(e) => {
+                if (!isExportMode) {
+                  e.stopPropagation();
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('primary');
+                }
+              }}
+              className={`transition-all rounded-xs ${
+                isBlockSelected && activeTextTarget === 'primary'
+                  ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                  : ''
+              }`}
+            >
               {renderEditableText(
                 block.text || '',
                 (val) => onUpdateBlock(block.id, { text: val }),
-                buildTextCss(block.textStyle, pageInk),
+                headlineStyle,
                 'Enter Headline Title...',
-                true
+                true,
+                () => {
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('primary');
+                }
               )}
             </div>
 
             {(block.secondaryText !== undefined || !isExportMode) &&
               (!isExportMode || (block.secondaryText && block.secondaryText.trim().length > 0)) && (
-                <div className="pt-0.5 max-w-2xl">
+                <div
+                  onClick={(e) => {
+                    if (!isExportMode) {
+                      e.stopPropagation();
+                      onSelectBlock(block.id);
+                      onSelectTextTarget?.('secondary');
+                    }
+                  }}
+                  className={`pt-0.5 max-w-2xl transition-all rounded-xs ${
+                    isBlockSelected && activeTextTarget === 'secondary'
+                      ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                      : ''
+                  }`}
+                >
                   {renderEditableText(
                     block.secondaryText || '',
                     (val) => onUpdateBlock(block.id, { secondaryText: val }),
-                    {
-                      fontFamily: globalSettings.bodyFont,
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      lineHeight: 1.55,
-                      color: mutedInk,
-                      textAlign: block.textStyle.textAlign,
-                    },
+                    subtitleStyle,
                     'Optional lead subtitle or project location...',
-                    true
+                    true,
+                    () => {
+                      onSelectBlock(block.id);
+                      onSelectTextTarget?.('secondary');
+                    }
                   )}
                 </div>
               )}
           </div>
         );
+      }
 
       case 'paragraph':
         return (
@@ -575,62 +655,148 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           </div>
         );
 
-      case 'two-column-text':
+      case 'two-column-text': {
+        const isBlockSelected = !isExportMode && selectedBlockId === block.id;
+        const col2Style = buildTextCss(block.secondaryTextStyle || block.textStyle, pageInk);
+
         return (
-          <div className="grid grid-cols-2 gap-8 items-start">
-            <div>
+          <div className="grid grid-cols-2 gap-8 items-start w-full">
+            <div
+              onClick={(e) => {
+                if (!isExportMode) {
+                  e.stopPropagation();
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('primary');
+                }
+              }}
+              className={`transition-all rounded-xs ${
+                isBlockSelected && activeTextTarget === 'primary'
+                  ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                  : ''
+              }`}
+            >
               {renderEditableText(
                 block.text || '',
                 (val) => onUpdateBlock(block.id, { text: val }),
                 buildTextCss(block.textStyle, pageInk),
                 'Left column narrative prose...',
-                true
+                true,
+                () => {
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('primary');
+                }
               )}
             </div>
-            <div>
+            <div
+              onClick={(e) => {
+                if (!isExportMode) {
+                  e.stopPropagation();
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('secondary');
+                }
+              }}
+              className={`transition-all rounded-xs ${
+                isBlockSelected && activeTextTarget === 'secondary'
+                  ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                  : ''
+              }`}
+            >
               {renderEditableText(
                 block.secondaryText || '',
                 (val) => onUpdateBlock(block.id, { secondaryText: val }),
-                buildTextCss(block.textStyle, pageInk),
+                col2Style,
                 'Right column narrative prose...',
-                true
+                true,
+                () => {
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('secondary');
+                }
               )}
             </div>
           </div>
         );
+      }
 
-      case 'pull-quote':
+      case 'pull-quote': {
+        const isBlockSelected = !isExportMode && selectedBlockId === block.id;
+        const kickerStyle = buildTextCss(
+          block.kickerTextStyle || {
+            fontFamily: globalSettings.monoFont,
+            fontSize: 10.5,
+            fontWeight: 500,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            letterSpacing: 0.1,
+            textTransform: 'uppercase',
+            color: mutedInk,
+            lineHeight: 1.4,
+            textAlign: block.textStyle?.textAlign || 'left',
+          },
+          mutedInk
+        );
+
         return (
           <div
             style={{ borderColor: borderCol }}
             className="py-4 border-t border-b flex flex-col gap-2"
           >
-            {renderEditableText(
-              block.text || '',
-              (val) => onUpdateBlock(block.id, { text: val }),
-              buildTextCss(block.textStyle, pageInk),
-              '“Enter architectural pull quote or thesis statement...”',
-              true
-            )}
+            <div
+              onClick={(e) => {
+                if (!isExportMode) {
+                  e.stopPropagation();
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('primary');
+                }
+              }}
+              className={`transition-all rounded-xs ${
+                isBlockSelected && activeTextTarget === 'primary'
+                  ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                  : ''
+              }`}
+            >
+              {renderEditableText(
+                block.text || '',
+                (val) => onUpdateBlock(block.id, { text: val }),
+                buildTextCss(block.textStyle, pageInk),
+                '“Enter architectural pull quote or thesis statement...”',
+                true,
+                () => {
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('primary');
+                }
+              )}
+            </div>
             {(block.kicker !== undefined || !isExportMode) && (
-              <div>
+              <div
+                onClick={(e) => {
+                  if (!isExportMode) {
+                    e.stopPropagation();
+                    onSelectBlock(block.id);
+                    onSelectTextTarget?.('kicker');
+                  }
+                }}
+                className={`transition-all rounded-xs ${
+                  isBlockSelected && activeTextTarget === 'kicker'
+                    ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                    : ''
+                }`}
+              >
                 {renderEditableText(
                   block.kicker || '',
                   (val) => onUpdateBlock(block.id, { kicker: val }),
-                  {
-                    fontFamily: globalSettings.monoFont,
-                    fontSize: '10.5px',
-                    fontWeight: 500,
-                    letterSpacing: '0.08em',
-                    color: mutedInk,
-                  },
+                  kickerStyle,
                   '— ATTRIBUTION / SOURCE',
-                  false
+                  false,
+                  () => {
+                    onSelectBlock(block.id);
+                    onSelectTextTarget?.('kicker');
+                  }
                 )}
               </div>
             )}
           </div>
         );
+      }
 
       case 'spec-grid': {
         const specs: SpecItem[] = block.specs || [];

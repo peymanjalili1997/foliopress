@@ -88,6 +88,8 @@ export interface GridImageItem {
   caption?: string;
 }
 
+export type TextTargetField = 'primary' | 'secondary' | 'kicker';
+
 export interface PortfolioBlock {
   id: string;
   type: BlockType;
@@ -97,6 +99,7 @@ export interface PortfolioBlock {
   secondaryText?: string;
   textStyle: TextStyle;
   secondaryTextStyle?: TextStyle;
+  kickerTextStyle?: TextStyle;
   // Image fields
   imageUrl?: string;
   imageCaption?: string;

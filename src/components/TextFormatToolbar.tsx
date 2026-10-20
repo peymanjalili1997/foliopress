@@ -24,12 +24,14 @@ import {
   Type,
   Underline,
 } from 'lucide-react';
-import { ENGLISH_FONTS } from '../data/editorialAssets';
-import { BlockType, PortfolioBlock, TextStyle } from '../types/portfolio';
+import { BlockType, PortfolioBlock, TextStyle, TextTargetField } from '../types/portfolio';
+import { GoogleFontPicker } from './GoogleFontPicker';
 
 interface TextFormatToolbarProps {
   selectedBlock: PortfolioBlock | null;
-  onUpdateTextStyle: (patch: Partial<TextStyle>) => void;
+  activeTextTarget?: TextTargetField;
+  onSelectTextTarget?: (target: TextTargetField) => void;
+  onUpdateTextStyle: (patch: Partial<TextStyle>, target?: TextTargetField) => void;
   onAddBlock: (type: BlockType) => void;
   onAiPolishText?: (style: 'editorial' | 'concise' | 'technical' | 'grammar') => void;
   defaultHeadingFont: string;
@@ -39,58 +41,139 @@ const FONT_SIZES = [10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 28, 32, 36, 42, 48, 
 
 export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
   selectedBlock,
+  activeTextTarget = 'primary',
+  onSelectTextTarget,
   onUpdateTextStyle,
   onAddBlock,
   onAiPolishText,
   defaultHeadingFont,
 }) => {
-  const activeStyle: TextStyle = selectedBlock?.textStyle || {
-    fontFamily: defaultHeadingFont,
-    fontSize: 16,
-    fontWeight: 400,
-    fontStyle: 'normal',
-    textDecoration: 'none',
-    textAlign: 'left',
-    lineHeight: 1.5,
-    letterSpacing: 0,
-    textTransform: 'none',
+  // Determine available text targets for currently selected block
+  const getTargetsForBlock = (): Array<{ id: TextTargetField; label: string }> => {
+    if (!selectedBlock) return [];
+    if (selectedBlock.type === 'heading') {
+      return [
+        { id: 'primary', label: 'Headline' },
+        { id: 'secondary', label: 'Subtitle' },
+        { id: 'kicker', label: 'Kicker' },
+      ];
+    }
+    if (selectedBlock.type === 'pull-quote') {
+      return [
+        { id: 'primary', label: 'Quote' },
+        { id: 'kicker', label: 'Attribution' },
+      ];
+    }
+    if (selectedBlock.type === 'two-column-text') {
+      return [
+        { id: 'primary', label: 'Column 1' },
+        { id: 'secondary', label: 'Column 2' },
+      ];
+    }
+    return [{ id: 'primary', label: 'Text' }];
   };
 
+  const targets = getTargetsForBlock();
+
+  // Determine active typography style based on current target
+  const getActiveStyle = (): TextStyle => {
+    if (!selectedBlock) {
+      return {
+        fontFamily: defaultHeadingFont,
+        fontSize: 16,
+        fontWeight: 400,
+        fontStyle: 'normal',
+        textDecoration: 'none',
+        textAlign: 'left',
+        lineHeight: 1.5,
+        letterSpacing: 0,
+        textTransform: 'none',
+      };
+    }
+
+    if (activeTextTarget === 'kicker') {
+      return (
+        selectedBlock.kickerTextStyle || {
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
+          fontWeight: 500,
+          fontStyle: 'normal',
+          textDecoration: 'none',
+          textAlign: selectedBlock.textStyle?.textAlign || 'left',
+          lineHeight: 1.4,
+          letterSpacing: 0.12,
+          textTransform: 'uppercase',
+        }
+      );
+    }
+
+    if (activeTextTarget === 'secondary') {
+      return (
+        selectedBlock.secondaryTextStyle || {
+          fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
+          fontSize: 14,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          textDecoration: 'none',
+          textAlign: selectedBlock.textStyle?.textAlign || 'left',
+          lineHeight: 1.55,
+          letterSpacing: 0,
+          textTransform: 'none',
+        }
+      );
+    }
+
+    return selectedBlock.textStyle;
+  };
+
+  const activeStyle = getActiveStyle();
   const isDisabled = !selectedBlock;
+
+  const handlePatch = (patch: Partial<TextStyle>) => {
+    onUpdateTextStyle(patch, activeTextTarget);
+  };
 
   return (
     <div className="bg-white border-b border-stone-200/90 px-4 py-2 flex flex-wrap items-center justify-between gap-3 select-none">
       {/* Left: Rich Typography Controls for Selected Block */}
       <div className="flex flex-wrap items-center gap-1.5">
+        {/* Block & Multi-Text Target Selector */}
+        {selectedBlock && targets.length > 1 && (
+          <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-lg border border-stone-200/80 mr-1 shrink-0">
+            <span className="text-[9.5px] text-stone-400 font-mono uppercase px-1 font-semibold">
+              Target:
+            </span>
+            {targets.map((tgt) => (
+              <button
+                key={tgt.id}
+                type="button"
+                onClick={() => onSelectTextTarget?.(tgt.id)}
+                className={`px-2 py-0.5 text-[11px] font-medium rounded transition-all ${
+                  activeTextTarget === tgt.id
+                    ? 'bg-stone-900 text-white shadow-2xs font-semibold'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                {tgt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Font Family (Online Google Fonts Loader) & Sizing */}
         <div className="flex items-center gap-1.5 pr-2 border-r border-stone-200">
-          <Type className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-          <select
+          <GoogleFontPicker
             disabled={isDisabled}
-            aria-label="English Font Family"
             value={activeStyle.fontFamily}
-            onChange={(e) => onUpdateTextStyle({ fontFamily: e.target.value })}
-            style={{ fontFamily: activeStyle.fontFamily }}
-            className="h-8 px-2.5 text-xs font-medium bg-stone-50 border border-stone-200 rounded-md text-stone-900 focus:outline-none focus:border-stone-900 disabled:opacity-45 cursor-pointer min-w-[175px]"
-          >
-            {(['Editorial Serif', 'Architectural Sans', 'Display & Avant-Garde', 'Technical Mono'] as const).map(
-              (cat) => (
-                <optgroup key={cat} label={cat}>
-                  {ENGLISH_FONTS.filter((f) => f.category === cat).map((font) => (
-                    <option key={font.name} value={font.family} style={{ fontFamily: font.family }}>
-                      {font.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )
-            )}
-          </select>
+            onChange={(family) => handlePatch({ fontFamily: family })}
+          />
 
           {/* Font Size */}
           <select
             disabled={isDisabled}
             aria-label="Font Size"
             value={Math.round(activeStyle.fontSize)}
-            onChange={(e) => onUpdateTextStyle({ fontSize: Number(e.target.value) })}
+            onChange={(e) => handlePatch({ fontSize: Number(e.target.value) })}
             className="h-8 px-2 text-xs tabular-nums font-medium bg-stone-50 border border-stone-200 rounded-md text-stone-900 focus:outline-none focus:border-stone-900 disabled:opacity-45 cursor-pointer"
           >
             {FONT_SIZES.map((sz) => (
@@ -105,7 +188,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             disabled={isDisabled}
             aria-label="Font Weight"
             value={activeStyle.fontWeight}
-            onChange={(e) => onUpdateTextStyle({ fontWeight: Number(e.target.value) })}
+            onChange={(e) => handlePatch({ fontWeight: Number(e.target.value) })}
             className="h-8 px-2 text-xs font-medium bg-stone-50 border border-stone-200 rounded-md text-stone-900 focus:outline-none focus:border-stone-900 disabled:opacity-45 cursor-pointer"
           >
             <option value={300}>Light 300</option>
@@ -113,6 +196,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             <option value={500}>Medium 500</option>
             <option value={600}>SemiBold 600</option>
             <option value={700}>Bold 700</option>
+            <option value={800}>ExtraBold 800</option>
           </select>
         </div>
 
@@ -123,7 +207,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             disabled={isDisabled}
             title="Bold (700)"
             onClick={() =>
-              onUpdateTextStyle({ fontWeight: activeStyle.fontWeight >= 600 ? 400 : 700 })
+              handlePatch({ fontWeight: activeStyle.fontWeight >= 600 ? 400 : 700 })
             }
             className={`w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-40 ${
               activeStyle.fontWeight >= 600
@@ -139,7 +223,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             disabled={isDisabled}
             title="Italic"
             onClick={() =>
-              onUpdateTextStyle({
+              handlePatch({
                 fontStyle: activeStyle.fontStyle === 'italic' ? 'normal' : 'italic',
               })
             }
@@ -157,7 +241,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             disabled={isDisabled}
             title="Underline"
             onClick={() =>
-              onUpdateTextStyle({
+              handlePatch({
                 textDecoration: activeStyle.textDecoration === 'underline' ? 'none' : 'underline',
               })
             }
@@ -175,7 +259,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             disabled={isDisabled}
             title="Toggle Uppercase Tracking"
             onClick={() =>
-              onUpdateTextStyle({
+              handlePatch({
                 textTransform: activeStyle.textTransform === 'uppercase' ? 'none' : 'uppercase',
               })
             }
@@ -189,14 +273,14 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
           </button>
         </div>
 
-        {/* Text Alignment (Default Left-Aligned LTR) */}
+        {/* Text Alignment */}
         <div className="flex items-center gap-0.5 pr-2 border-r border-stone-200">
           {(
             [
-              { align: 'left', icon: AlignLeft, label: 'Align Left (LTR Default)' },
+              { align: 'left', icon: AlignLeft, label: 'Align Left' },
               { align: 'center', icon: AlignCenter, label: 'Align Center' },
               { align: 'right', icon: AlignRight, label: 'Align Right' },
-              { align: 'justify', icon: AlignJustify, label: 'Justify Editorial Prose' },
+              { align: 'justify', icon: AlignJustify, label: 'Justify' },
             ] as const
           ).map(({ align, icon: Icon, label }) => (
             <button
@@ -204,7 +288,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
               type="button"
               disabled={isDisabled}
               title={label}
-              onClick={() => onUpdateTextStyle({ textAlign: align })}
+              onClick={() => handlePatch({ textAlign: align })}
               className={`w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-40 ${
                 activeStyle.textAlign === align
                   ? 'bg-stone-900 text-white'
@@ -223,7 +307,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             <select
               disabled={isDisabled}
               value={activeStyle.lineHeight}
-              onChange={(e) => onUpdateTextStyle({ lineHeight: Number(e.target.value) })}
+              onChange={(e) => handlePatch({ lineHeight: Number(e.target.value) })}
               className="h-7 px-1.5 text-xs tabular-nums bg-stone-50 border border-stone-200 rounded text-stone-800 disabled:opacity-40"
             >
               <option value={1.05}>1.05</option>
@@ -241,7 +325,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
             <select
               disabled={isDisabled}
               value={activeStyle.letterSpacing}
-              onChange={(e) => onUpdateTextStyle({ letterSpacing: Number(e.target.value) })}
+              onChange={(e) => handlePatch({ letterSpacing: Number(e.target.value) })}
               className="h-7 px-1.5 text-xs tabular-nums bg-stone-50 border border-stone-200 rounded text-stone-800 disabled:opacity-40"
             >
               <option value={-0.03}>Tight (-0.03em)</option>
@@ -262,7 +346,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
               type="color"
               disabled={isDisabled}
               value={activeStyle.color || '#161514'}
-              onChange={(e) => onUpdateTextStyle({ color: e.target.value })}
+              onChange={(e) => handlePatch({ color: e.target.value })}
               className="w-6 h-6 rounded border border-stone-300 cursor-pointer p-0 bg-transparent"
             />
           </label>
@@ -280,34 +364,34 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
                 <span>AI Polish</span>
               </button>
               {!isDisabled && (
-                <div className="absolute left-0 top-full mt-1 hidden group-hover/ai:flex flex-col bg-white border border-stone-200 rounded-lg shadow-xl py-1 z-30 min-w-[210px]">
+                <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg py-1 hidden group-hover/ai:block z-30">
                   <button
                     type="button"
                     onClick={() => onAiPolishText('editorial')}
-                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                    className="w-full text-left px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-100"
                   >
-                    🏛️ Architectural Monograph Tone
+                    Architectural Monograph
                   </button>
                   <button
                     type="button"
                     onClick={() => onAiPolishText('concise')}
-                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                    className="w-full text-left px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-100"
                   >
-                    ⚡ Concise & Impactful
+                    Concise & Crisp
                   </button>
                   <button
                     type="button"
                     onClick={() => onAiPolishText('technical')}
-                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                    className="w-full text-left px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-100"
                   >
-                    📐 Technical / Case Study Precision
+                    Technical Specifications
                   </button>
                   <button
                     type="button"
                     onClick={() => onAiPolishText('grammar')}
-                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                    className="w-full text-left px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-100"
                   >
-                    ✍️ Grammar & Vocabulary Polish
+                    Fix English Flow
                   </button>
                 </div>
               )}
@@ -316,113 +400,99 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
         </div>
       </div>
 
-      {/* Right: Quick Insert Block Buttons onto Current Page */}
-      <div className="flex items-center gap-1 overflow-x-auto py-0.5">
-        <span className="text-[11px] font-medium text-stone-400 mr-1 whitespace-nowrap shrink-0">
-          Insert:
+      {/* Right: Quick Block Adder Strip */}
+      <div className="flex items-center gap-1 shrink-0 overflow-x-auto py-0.5">
+        <span className="text-[10px] uppercase font-mono tracking-wider text-stone-400 pr-1 border-r border-stone-200 mr-1 hidden lg:inline">
+          + Block:
         </span>
         <button
           type="button"
           onClick={() => onAddBlock('heading')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Add Editorial Section Heading"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
         >
           <Heading1 className="w-3.5 h-3.5" />
           <span>Heading</span>
         </button>
+
         <button
           type="button"
           onClick={() => onAddBlock('paragraph')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Add Body Paragraph"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
         >
           <FileText className="w-3.5 h-3.5" />
           <span>Text</span>
         </button>
+
         <button
           type="button"
           onClick={() => onAddBlock('image')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Add Full-Width Image Plate"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
         >
           <ImageIcon className="w-3.5 h-3.5" />
           <span>Image</span>
         </button>
-        <button
-          type="button"
-          onClick={() => onAddBlock('device-mockup')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
-          title="MacBook / iPhone Device Mockup Frame"
-        >
-          <Laptop className="w-3.5 h-3.5 text-indigo-600" />
-          <span>Mockup</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onAddBlock('color-palette')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
-          title="Project Color Palette & Swatches"
-        >
-          <Palette className="w-3.5 h-3.5 text-amber-600" />
-          <span>Palette</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onAddBlock('before-after')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
-          title="Before / After Project Comparison"
-        >
-          <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Before/After</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onAddBlock('qr-code')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
-          title="Interactive QR Code Scan Card"
-        >
-          <QrCode className="w-3.5 h-3.5 text-blue-600" />
-          <span>QR Code</span>
-        </button>
+
         <button
           type="button"
           onClick={() => onAddBlock('split-media-text')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Add Split Media + Text Column"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
         >
           <SplitSquareVertical className="w-3.5 h-3.5" />
           <span>Split</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => onAddBlock('device-mockup')}
+          title="Add MacBook / iPhone Mockup Frame"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
+        >
+          <Laptop className="w-3.5 h-3.5 text-stone-600" />
+          <span>Mockup</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onAddBlock('before-after')}
+          title="Add Before / After Comparison"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
+        >
+          <ArrowLeftRight className="w-3.5 h-3.5 text-stone-600" />
+          <span>Before/After</span>
+        </button>
+
         <button
           type="button"
           onClick={() => onAddBlock('multi-photo-grid')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
-          title="3-Photo Detail Grid"
+          title="Add Multi-Photo Detail Grid"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
         >
-          <Grid3X3 className="w-3.5 h-3.5" />
+          <Grid3X3 className="w-3.5 h-3.5 text-stone-600" />
           <span>Grid</span>
         </button>
+
         <button
           type="button"
-          onClick={() => onAddBlock('project-meta')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
-          title="Software & Tools Stack Chips"
+          onClick={() => onAddBlock('color-palette')}
+          title="Add Color Palette Swatches"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
         >
-          <Tags className="w-3.5 h-3.5" />
-          <span>Stack</span>
+          <Palette className="w-3.5 h-3.5 text-amber-600" />
+          <span>Palette</span>
         </button>
+
         <button
           type="button"
-          onClick={() => onAddBlock('pull-quote')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          onClick={() => onAddBlock('qr-code')}
+          title="Add Scannable QR Code Card"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
         >
-          <Quote className="w-3.5 h-3.5" />
-          <span>Quote</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onAddBlock('divider')}
-          className="px-1.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-0.5 transition-colors whitespace-nowrap shrink-0"
-          title="Insert Architectural Rule / Spacer"
-        >
-          <Minus className="w-3.5 h-3.5" />
-          <span>Rule</span>
+          <QrCode className="w-3.5 h-3.5 text-stone-600" />
+          <span>QR</span>
         </button>
       </div>
     </div>
