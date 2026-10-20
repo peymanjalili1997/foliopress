@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Check,
   FilePlus2,
@@ -67,6 +67,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
 }) => {
   const primaryUploadRef = useRef<HTMLInputElement | null>(null);
   const secondaryUploadRef = useRef<HTMLInputElement | null>(null);
+  const [sidebarTemplateFilter, setSidebarTemplateFilter] = useState<'all' | 'portrait' | 'landscape'>('all');
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isSecondary = false) => {
     const file = e.target.files?.[0];
@@ -575,9 +576,49 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                 Switch the current page layout or append a new pre-structured page to your portfolio.
               </p>
 
+              {/* Orientation Category Filter */}
+              <div className="flex p-0.5 bg-stone-100 rounded-lg text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSidebarTemplateFilter('all')}
+                  className={`flex-1 py-1 text-[11px] font-medium rounded-md transition-all ${
+                    sidebarTemplateFilter === 'all'
+                      ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  همه ({PAGE_TEMPLATES.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSidebarTemplateFilter('portrait')}
+                  className={`flex-1 py-1 text-[11px] font-medium rounded-md transition-all ${
+                    sidebarTemplateFilter === 'portrait'
+                      ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  عمودی ({PAGE_TEMPLATES.filter((t) => t.orientation === 'portrait').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSidebarTemplateFilter('landscape')}
+                  className={`flex-1 py-1 text-[11px] font-medium rounded-md transition-all ${
+                    sidebarTemplateFilter === 'landscape'
+                      ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  افقی ({PAGE_TEMPLATES.filter((t) => t.orientation === 'landscape').length})
+                </button>
+              </div>
+
               <div className="space-y-2.5">
-                {PAGE_TEMPLATES.map((tpl) => {
+                {PAGE_TEMPLATES.filter(
+                  (t) => sidebarTemplateFilter === 'all' || t.orientation === sidebarTemplateFilter
+                ).map((tpl) => {
                   const isCurrent = currentPage.templateId === tpl.id;
+                  const isPortrait = tpl.orientation === 'portrait';
                   return (
                     <div
                       key={tpl.id}
@@ -589,9 +630,20 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-semibold text-stone-900">{tpl.name}</span>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500">
-                          {tpl.badge}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={`text-[9px] font-medium px-1.5 py-0.2 rounded ${
+                              isPortrait
+                                ? 'bg-amber-50 text-amber-800 border border-amber-200/60'
+                                : 'bg-blue-50 text-blue-800 border border-blue-200/60'
+                            }`}
+                          >
+                            {isPortrait ? 'عمودی' : 'افقی'}
+                          </span>
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400">
+                            {tpl.badge}
+                          </span>
+                        </div>
                       </div>
                       <p className="text-[11px] text-stone-500 leading-snug mb-2.5">
                         {tpl.description}

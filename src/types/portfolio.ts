@@ -144,7 +144,9 @@ export type PageTemplateId =
   | 'uiux-casestudy'
   | 'architecture-detail'
   | 'photo-lookbook'
-  | 'contact-qr';
+  | 'contact-qr'
+  | 'cover-landscape'
+  | 'before-after-spread';
 
 export interface PortfolioPage {
   id: string;

@@ -555,68 +555,96 @@ export interface PageTemplateDescriptor {
   name: string;
   description: string;
   badge: string;
+  orientation: 'portrait' | 'landscape';
 }
 
 export const PAGE_TEMPLATES: PageTemplateDescriptor[] = [
+  // --- VERTICAL / PORTRAIT TEMPLATES (عمودی) ---
   {
     id: 'cover-monograph',
     name: 'Cover Monograph',
-    description: 'Oversized editorial title, curated subtitle, hero plate, and issue credits.',
+    description: 'Oversized vertical editorial title, curated subtitle, hero plate, and issue credits.',
     badge: 'Cover',
+    orientation: 'portrait',
   },
   {
     id: 'editorial-split',
     name: 'Editorial Split',
     description: 'Asymmetric side-by-side visual plate and structured project narrative.',
     badge: 'Split',
-  },
-  {
-    id: 'visual-showcase',
-    name: 'Visual Showcase',
-    description: 'Full-width architectural plate with technical specification matrix.',
-    badge: 'Showcase',
-  },
-  {
-    id: 'dual-comparison',
-    name: 'Dual Plate Comparison',
-    description: 'Two parallel visual plates with spatial commentary and captions.',
-    badge: 'Dual',
+    orientation: 'portrait',
   },
   {
     id: 'case-study',
     name: 'Case Study Essay',
     description: 'Two-column critical essay, pull quote, and wide visual documentation.',
     badge: 'Essay',
+    orientation: 'portrait',
   },
   {
     id: 'biography-cv',
     name: 'Practice & Curriculum Vitae',
     description: 'Portrait plate, studio philosophy statement, and chronological index.',
     badge: 'Profile',
-  },
-  {
-    id: 'uiux-casestudy',
-    name: 'Digital Product & UI/UX Case Study',
-    description: 'MacBook/iPhone screen mockup, design challenge narrative, and project color palette.',
-    badge: 'UI/UX',
-  },
-  {
-    id: 'architecture-detail',
-    name: 'Architectural Details & Materials',
-    description: '3-photo material detail strip, structural specs, and project narrative.',
-    badge: 'Detail',
-  },
-  {
-    id: 'photo-lookbook',
-    name: 'Photographic Lookbook Spread',
-    description: 'Full-bleed imagery, pull quote, and technical tools execution stack.',
-    badge: 'Lookbook',
+    orientation: 'portrait',
   },
   {
     id: 'contact-qr',
     name: 'Contact & Interactive Scan',
     description: 'Interactive scannable QR code, project index, and artist signature statement.',
     badge: 'Contact',
+    orientation: 'portrait',
+  },
+
+  // --- HORIZONTAL / LANDSCAPE TEMPLATES (افقی) ---
+  {
+    id: 'cover-landscape',
+    name: 'Landscape Monograph Cover',
+    description: 'Panoramic exhibition title, 16:9 cinematic plate, and project metadata credits.',
+    badge: 'Wide Cover',
+    orientation: 'landscape',
+  },
+  {
+    id: 'uiux-casestudy',
+    name: 'Digital Product & UI/UX Presentation',
+    description: 'MacBook/iPhone screen mockup, design challenge narrative, and project color palette.',
+    badge: 'UI/UX Deck',
+    orientation: 'landscape',
+  },
+  {
+    id: 'dual-comparison',
+    name: 'Dual Plate Comparison Spread',
+    description: 'Two parallel visual plates side-by-side with spatial commentary and dual captions.',
+    badge: 'Dual Spread',
+    orientation: 'landscape',
+  },
+  {
+    id: 'before-after-spread',
+    name: 'Before & After Reconstruction',
+    description: 'Panoramic comparative plates showing architectural or design transformation with notes.',
+    badge: 'Before / After',
+    orientation: 'landscape',
+  },
+  {
+    id: 'architecture-detail',
+    name: 'Architectural Details & Multi-Photo Grid',
+    description: '3-photo material detail strip, structural specs, and project narrative.',
+    badge: 'Detail Grid',
+    orientation: 'landscape',
+  },
+  {
+    id: 'visual-showcase',
+    name: 'Visual Showcase & Axonometric',
+    description: 'Wide architectural hero plate with technical specification matrix.',
+    badge: 'Showcase',
+    orientation: 'landscape',
+  },
+  {
+    id: 'photo-lookbook',
+    name: 'Photographic Lookbook Spread',
+    description: 'Full-bleed imagery, pull quote, and technical tools execution stack.',
+    badge: 'Lookbook',
+    orientation: 'landscape',
   },
 ];
 
@@ -1305,6 +1333,143 @@ export function createBlocksForTemplate(
             { id: createUid('sp'), label: 'STUDIO LOCATION', value: 'Zurich · Neugasse 29' },
             { id: createUid('sp'), label: 'ONLINE PORTFOLIO', value: 'peymanjalili1997.github.io/foliopress' },
             { id: createUid('sp'), label: 'REPRESENTATION', value: 'Zurich Architecture Agency' },
+          ],
+          textStyle: {
+            fontFamily: bodyFont,
+            fontSize: 12,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.5,
+            letterSpacing: 0,
+            textTransform: 'none',
+          },
+        },
+      ];
+
+    case 'cover-landscape':
+      return [
+        {
+          id: createUid('blk'),
+          type: 'heading',
+          kicker: 'SELECTED WORKS · 2022–2026 ARCHITECTURAL MONOGRAPH',
+          text: 'HORIZONS OF MONOLITHIC TECTONICS',
+          secondaryText:
+            'A retrospective survey of civic pavilions, raw travertine structures, and museum environments.',
+          textStyle: {
+            fontFamily: headingFont,
+            fontSize: 42,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.1,
+            letterSpacing: -0.02,
+            textTransform: 'none',
+          },
+        },
+        {
+          id: createUid('blk'),
+          type: 'image',
+          imageUrl: CURATED_VISUAL_PLATES[0].url,
+          imageCaption: 'Fig 01. Permanent Collection Pavilion, Lake Lucerne — Panoramic South Elevation at Dusk.',
+          imageStyle: {
+            height: 320,
+            objectFit: 'cover',
+            zoom: 1,
+            filter: 'none',
+            borderRadius: 0,
+            showBorder: false,
+          },
+          textStyle: {
+            fontFamily: monoFont,
+            fontSize: 11,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.4,
+            letterSpacing: 0.02,
+            textTransform: 'none',
+          },
+        },
+        {
+          id: createUid('blk'),
+          type: 'project-meta',
+          toolsList: ['Rhino 3D', 'Archicad 28', 'V-Ray 6', 'Cinema 4D', 'Hand Renderings', 'Physical Casts'],
+          textStyle: {
+            fontFamily: monoFont,
+            fontSize: 11,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.4,
+            letterSpacing: 0,
+            textTransform: 'none',
+          },
+        },
+      ];
+
+    case 'before-after-spread':
+      return [
+        {
+          id: createUid('blk'),
+          type: 'heading',
+          kicker: 'HISTORIC RECONSTRUCTION · 2024–2026',
+          text: 'Palazzo Vecchio Galleria Transformation',
+          secondaryText:
+            'Comparative documentation of loadbearing vaulted masonry restoration versus completed open daylight pavilion.',
+          textStyle: {
+            fontFamily: headingFont,
+            fontSize: 32,
+            fontWeight: 500,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.15,
+            letterSpacing: -0.01,
+            textTransform: 'none',
+          },
+        },
+        {
+          id: createUid('blk'),
+          type: 'before-after',
+          beforeImageUrl: CURATED_VISUAL_PLATES[1].url,
+          beforeLabel: 'BEFORE · HISTORIC VAULT DISREPAIR',
+          beforeCaption: 'Original gallery hall condition prior to seismic stabilization and stone cleaning.',
+          afterImageUrl: CURATED_VISUAL_PLATES[0].url,
+          afterLabel: 'AFTER · COMPLETED CANOPY PAVILION',
+          afterCaption: 'Finished cantilevered stone structure with concealed climate control.',
+          imageStyle: {
+            height: 290,
+            objectFit: 'cover',
+            zoom: 1,
+            filter: 'none',
+            borderRadius: 0,
+            showBorder: false,
+          },
+          textStyle: {
+            fontFamily: monoFont,
+            fontSize: 11,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.4,
+            letterSpacing: 0,
+            textTransform: 'none',
+          },
+        },
+        {
+          id: createUid('blk'),
+          type: 'spec-grid',
+          specs: [
+            { id: createUid('sp'), label: 'RESTORATION PERIOD', value: '18 Months' },
+            { id: createUid('sp'), label: 'PRESERVATION GRADE', value: 'Class A Monument' },
+            { id: createUid('sp'), label: 'REINFORCEMENT', value: 'Carbon Tension Rods' },
+            { id: createUid('sp'), label: 'CLIENT', value: 'Civic Cultural Trust' },
           ],
           textStyle: {
             fontFamily: bodyFont,
