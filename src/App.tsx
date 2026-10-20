@@ -1089,7 +1089,7 @@ export default function App() {
               <div className="flex items-center gap-1 bg-white border border-stone-200/90 rounded-md p-0.5">
                 <button
                   type="button"
-                  title="Switch to Portrait (عمودی)"
+                  title="Switch to Portrait"
                   onClick={() => handleToggleOrientation('portrait')}
                   className={`px-2.5 py-1 text-[11px] font-medium rounded flex items-center gap-1.5 transition-all ${
                     !isLandscape
@@ -1104,7 +1104,7 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  title="Switch to Landscape (افقی)"
+                  title="Switch to Landscape"
                   onClick={() => handleToggleOrientation('landscape')}
                   className={`px-2.5 py-1 text-[11px] font-medium rounded flex items-center gap-1.5 transition-all ${
                     isLandscape
@@ -1115,7 +1115,7 @@ export default function App() {
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="2" y="5" width="20" height="14" rx="2" />
                   </svg>
-                  <span className="hidden sm:inline">Landscape (افقی)</span>
+                  <span className="hidden sm:inline">Landscape</span>
                 </button>
               </div>
 

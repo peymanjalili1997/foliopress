@@ -559,7 +559,7 @@ export interface PageTemplateDescriptor {
 }
 
 export const PAGE_TEMPLATES: PageTemplateDescriptor[] = [
-  // --- VERTICAL / PORTRAIT TEMPLATES (عمودی) ---
+  // --- VERTICAL / PORTRAIT TEMPLATES ---
   {
     id: 'cover-monograph',
     name: 'Cover Monograph',
@@ -596,7 +596,7 @@ export const PAGE_TEMPLATES: PageTemplateDescriptor[] = [
     orientation: 'portrait',
   },
 
-  // --- HORIZONTAL / LANDSCAPE TEMPLATES (افقی) ---
+  // --- HORIZONTAL / LANDSCAPE TEMPLATES ---
   {
     id: 'cover-landscape',
     name: 'Landscape Monograph Cover',

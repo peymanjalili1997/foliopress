@@ -1502,7 +1502,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                 <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-3">
                   <Plus className="w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-semibold text-stone-800">Blank Page Canvas · صفحه خالی</h3>
+                <h3 className="text-sm font-semibold text-stone-800">Blank Page Canvas</h3>
                 <p className="text-xs text-stone-500 max-w-sm mt-1.5 leading-relaxed">
                   Use the top formatting toolbar to insert headlines, editorial copy, media plates, mockups, or photo grids.
                 </p>

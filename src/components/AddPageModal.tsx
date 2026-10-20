@@ -131,7 +131,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
           <div>
             <h2 className="text-base font-semibold text-stone-900 flex items-center gap-2">
               <Plus className="w-4 h-4 text-stone-700" />
-              <span>Add New Page · ایجاد صفحه جدید</span>
+              <span>Add New Page</span>
             </h2>
             <p className="text-xs text-stone-500 mt-0.5">
               Select orientation and starting layout for your portfolio spread.
@@ -152,7 +152,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
-                1. Page Orientation · جهت صفحه
+                1. Page Orientation
               </label>
               <span className="text-[11px] text-stone-400">
                 Determines canvas aspect ratio
@@ -176,7 +176,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-stone-900">
-                      Portrait (عمودی)
+                      Portrait
                     </span>
                     {orientation === 'portrait' && (
                       <Check className="w-4 h-4 text-stone-900" />
@@ -207,7 +207,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-stone-900">
-                      Landscape (افقی)
+                      Landscape
                     </span>
                     {orientation === 'landscape' && (
                       <Check className="w-4 h-4 text-stone-900" />
@@ -228,7 +228,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
-                2. Starting Layout · چیدمان یا قالب صفحه
+                2. Starting Layout & Template
               </label>
 
               {/* Segmented Category Filter */}
@@ -242,7 +242,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  عمودی ({portraitTemplates.length})
+                  Portrait ({portraitTemplates.length})
                 </button>
                 <button
                   type="button"
@@ -253,7 +253,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  افقی ({landscapeTemplates.length})
+                  Landscape ({landscapeTemplates.length})
                 </button>
                 <button
                   type="button"
@@ -264,7 +264,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  همه ({PAGE_TEMPLATES.length})
+                  All ({PAGE_TEMPLATES.length})
                 </button>
               </div>
             </div>
@@ -286,7 +286,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-stone-900">
-                      Blank Canvas · صفحه کاملاً خالی
+                      Blank Canvas
                     </span>
                     <span className="text-[10px] bg-stone-100 text-stone-600 px-1.5 py-0.2 rounded font-mono">
                       Custom
@@ -339,7 +339,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
                                 : 'bg-blue-50 text-blue-800 border border-blue-200/60'
                             }`}
                           >
-                            {isPortrait ? 'عمودی · Portrait' : 'افقی · Landscape'}
+                            {isPortrait ? 'Portrait' : 'Landscape'}
                           </span>
                           <span className="text-[9.5px] uppercase tracking-wider font-mono text-stone-400">
                             {tpl.badge}
@@ -360,7 +360,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
           {/* STEP 3: PAGE TITLE */}
           <div className="space-y-1.5 pt-1">
             <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
-              3. Page Title · عنوان صفحه (Optional)
+              3. Page Title (Optional)
             </label>
             <input
               type="text"
@@ -395,7 +395,7 @@ export const AddPageModal: React.FC<AddPageModalProps> = ({
               className="px-5 py-2 text-xs font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-lg flex items-center gap-1.5 transition-colors shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add Page · ایجاد صفحه</span>
+              <span>Add Page</span>
             </button>
           </div>
         </div>

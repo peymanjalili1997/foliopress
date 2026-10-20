@@ -530,13 +530,13 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                   <option value="inherit">
                     Document Default ({PAGE_SIZE_PRESETS.find((p) => p.id === globalSettings.pageSize)?.label || 'Global'})
                   </option>
-                  <optgroup label="Horizontal / Landscape (افقی)">
+                  <optgroup label="Horizontal / Landscape">
                     <option value="a4-landscape">A4 Landscape (297 × 210 mm)</option>
                     <option value="deck-16-9">16:9 Presentation (297 × 167 mm)</option>
                     <option value="letter-landscape">US Letter Landscape (11 × 8.5 in)</option>
                     <option value="deck-4-3">4:3 Slide (297 × 223 mm)</option>
                   </optgroup>
-                  <optgroup label="Vertical / Portrait (عمودی)">
+                  <optgroup label="Vertical / Portrait">
                     <option value="a4-portrait">A4 Portrait (210 × 297 mm)</option>
                     <option value="letter-portrait">US Letter Portrait (8.5 × 11 in)</option>
                   </optgroup>
@@ -587,7 +587,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  همه ({PAGE_TEMPLATES.length})
+                  All ({PAGE_TEMPLATES.length})
                 </button>
                 <button
                   type="button"
@@ -598,7 +598,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  عمودی ({PAGE_TEMPLATES.filter((t) => t.orientation === 'portrait').length})
+                  Portrait ({PAGE_TEMPLATES.filter((t) => t.orientation === 'portrait').length})
                 </button>
                 <button
                   type="button"
@@ -609,7 +609,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  افقی ({PAGE_TEMPLATES.filter((t) => t.orientation === 'landscape').length})
+                  Landscape ({PAGE_TEMPLATES.filter((t) => t.orientation === 'landscape').length})
                 </button>
               </div>
 
@@ -638,7 +638,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                                 : 'bg-blue-50 text-blue-800 border border-blue-200/60'
                             }`}
                           >
-                            {isPortrait ? 'عمودی' : 'افقی'}
+                            {isPortrait ? 'Portrait' : 'Landscape'}
                           </span>
                           <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400">
                             {tpl.badge}
@@ -674,7 +674,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
           </div>
         )}
 
-        {/* TAB 3: GLOBAL DOCUMENT FORMATTING ("قالببندی کلی") */}
+        {/* TAB 3: GLOBAL DOCUMENT FORMATTING */}
         {activeTab === 'global' && (
           <div className="space-y-6">
             {/* Page Size & Orientation */}
@@ -686,7 +686,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
               {/* Fast Orientation Segmented Switch */}
               <div>
                 <label className="block text-[11px] text-stone-500 mb-1.5">
-                  Page Orientation (جهت صفحات)
+                  Page Orientation
                 </label>
                 {(() => {
                   const currentSpec =
@@ -716,7 +716,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="5" y="2" width="14" height="20" rx="2" />
                         </svg>
-                        <span>Portrait (عمودی)</span>
+                        <span>Portrait</span>
                       </button>
 
                       <button
@@ -739,7 +739,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="2" y="5" width="20" height="14" rx="2" />
                         </svg>
-                        <span>Landscape (افقی)</span>
+                        <span>Landscape</span>
                       </button>
                     </div>
                   );
