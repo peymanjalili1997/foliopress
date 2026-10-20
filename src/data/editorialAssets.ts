@@ -1384,6 +1384,43 @@ export function createBlocksForTemplate(
           },
         },
       ];
+    default:
+      return [
+        {
+          id: createUid('blk'),
+          type: 'heading',
+          kicker: 'ARCHITECTURAL PORTFOLIO',
+          text: 'Project Overview',
+          secondaryText: 'Context, site constraints, and design intent.',
+          textStyle: {
+            fontFamily: headingFont,
+            fontSize: 34,
+            fontWeight: 500,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.15,
+            letterSpacing: -0.01,
+            textTransform: 'none',
+          },
+        },
+        {
+          id: createUid('blk'),
+          type: 'paragraph',
+          text: 'Enter project narrative, design analysis, and spatial specifications.',
+          textStyle: {
+            fontFamily: bodyFont,
+            fontSize: 14,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left',
+            lineHeight: 1.65,
+            letterSpacing: 0,
+            textTransform: 'none',
+          },
+        },
+      ];
   }
 }
 

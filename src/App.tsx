@@ -74,7 +74,10 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed.pages) && parsed.pages.length > 0) {
-          return parsed.pages;
+          return parsed.pages.map((p: any) => ({
+            ...p,
+            blocks: Array.isArray(p.blocks) ? p.blocks : [],
+          }));
         }
       }
     } catch {
@@ -100,7 +103,7 @@ export default function App() {
 
   const [activePageId, setActivePageId] = useState<string>(() => pages[0]?.id || 'page-1');
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
-    () => pages[0]?.blocks[0]?.id || null
+    () => pages[0]?.blocks?.[0]?.id || null
   );
   const [activeTextTarget, setActiveTextTarget] = useState<TextTargetField>('primary');
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('element');
@@ -187,7 +190,7 @@ export default function App() {
     if (globalSettings.monoFont) loadGoogleFont(globalSettings.monoFont);
 
     pages.forEach((page) => {
-      page.blocks.forEach((block) => {
+      (page.blocks || []).forEach((block) => {
         if (block.textStyle?.fontFamily) loadGoogleFont(block.textStyle.fontFamily);
         if (block.secondaryTextStyle?.fontFamily) loadGoogleFont(block.secondaryTextStyle.fontFamily);
         if (block.kickerTextStyle?.fontFamily) loadGoogleFont(block.kickerTextStyle.fontFamily);
@@ -202,7 +205,7 @@ export default function App() {
   const currentPage = pages[activePageIndex] || pages[0];
 
   const selectedBlock =
-    currentPage?.blocks.find((b) => b.id === selectedBlockId) || null;
+    (currentPage?.blocks || []).find((b) => b.id === selectedBlockId) || null;
 
   // Active orientation & format determination
   const activeSizeId = currentPage?.pageSizeOverride || globalSettings.pageSize;
@@ -260,7 +263,7 @@ export default function App() {
         if (p.id !== currentPage.id) return p;
         return {
           ...p,
-          blocks: p.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b)),
+          blocks: (p.blocks || []).map((b) => (b.id === blockId ? { ...b, ...patch } : b)),
         };
       })
     );
@@ -530,7 +533,7 @@ export default function App() {
 
     setPages((prev) => {
       const updated = prev.map((p) =>
-        p.id === currentPage.id ? { ...p, blocks: [...p.blocks, newBlock] } : p
+        p.id === currentPage.id ? { ...p, blocks: [...(p.blocks || []), newBlock] } : p
       );
       pushHistory(updated);
       return updated;
@@ -544,11 +547,12 @@ export default function App() {
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== currentPage.id) return p;
-        const idx = p.blocks.findIndex((b) => b.id === blockId);
+        const currentBlocks = p.blocks || [];
+        const idx = currentBlocks.findIndex((b) => b.id === blockId);
         if (idx === -1) return p;
         const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-        if (targetIdx < 0 || targetIdx >= p.blocks.length) return p;
-        const nextBlocks = [...p.blocks];
+        if (targetIdx < 0 || targetIdx >= currentBlocks.length) return p;
+        const nextBlocks = [...currentBlocks];
         const [moved] = nextBlocks.splice(idx, 1);
         nextBlocks.splice(targetIdx, 0, moved);
         return { ...p, blocks: nextBlocks };
@@ -562,14 +566,15 @@ export default function App() {
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== currentPage.id) return p;
-        const idx = p.blocks.findIndex((b) => b.id === blockId);
+        const currentBlocks = p.blocks || [];
+        const idx = currentBlocks.findIndex((b) => b.id === blockId);
         if (idx === -1) return p;
-        const orig = p.blocks[idx];
+        const orig = currentBlocks[idx];
         const copy: PortfolioBlock = {
           ...JSON.parse(JSON.stringify(orig)),
           id: newId,
         };
-        const nextBlocks = [...p.blocks];
+        const nextBlocks = [...currentBlocks];
         nextBlocks.splice(idx + 1, 0, copy);
         return { ...p, blocks: nextBlocks };
       })
@@ -584,7 +589,7 @@ export default function App() {
         if (p.id !== currentPage.id) return p;
         return {
           ...p,
-          blocks: p.blocks.filter((b) => b.id !== blockId),
+          blocks: (p.blocks || []).filter((b) => b.id !== blockId),
         };
       })
     );
@@ -657,7 +662,7 @@ export default function App() {
 
     setPages((prev) => [...prev, newPage]);
     setActivePageId(newPage.id);
-    setSelectedBlockId(newPage.blocks[0]?.id || null);
+    setSelectedBlockId(newPage.blocks?.[0]?.id || null);
   };
 
   // Apply template to current page
@@ -668,7 +673,7 @@ export default function App() {
       globalSettings.headingFont,
       globalSettings.bodyFont,
       globalSettings.monoFont
-    );
+    ) || [];
     handleUpdatePage({
       templateId,
       title: tplMeta.name,
@@ -709,7 +714,7 @@ export default function App() {
   const handleDuplicatePage = (index: number) => {
     const source = pages[index];
     if (!source) return;
-    const clonedBlocks: PortfolioBlock[] = JSON.parse(JSON.stringify(source.blocks)).map(
+    const clonedBlocks: PortfolioBlock[] = JSON.parse(JSON.stringify(source.blocks || [])).map(
       (b: PortfolioBlock) => ({
         ...b,
         id: createUid('blk'),
@@ -727,7 +732,7 @@ export default function App() {
       return next;
     });
     setActivePageId(duplicatedPage.id);
-    setSelectedBlockId(duplicatedPage.blocks[0]?.id || null);
+    setSelectedBlockId(duplicatedPage.blocks?.[0]?.id || null);
   };
 
   // Delete page (prevent deleting the last remaining page)
@@ -739,7 +744,7 @@ export default function App() {
     if (activePageId === targetId) {
       const fallbackPage = nextPages[Math.max(0, index - 1)] || nextPages[0];
       setActivePageId(fallbackPage.id);
-      setSelectedBlockId(fallbackPage.blocks[0]?.id || null);
+      setSelectedBlockId(fallbackPage.blocks?.[0]?.id || null);
     }
   };
 
@@ -822,10 +827,14 @@ export default function App() {
       try {
         const parsed = JSON.parse(reader.result as string);
         if (Array.isArray(parsed.pages) && parsed.pages.length > 0 && parsed.globalSettings) {
-          setPages(parsed.pages);
+          const sanitized = parsed.pages.map((p: any) => ({
+            ...p,
+            blocks: Array.isArray(p.blocks) ? p.blocks : [],
+          }));
+          setPages(sanitized);
           setGlobalSettings(parsed.globalSettings);
-          setActivePageId(parsed.pages[0].id);
-          setSelectedBlockId(parsed.pages[0].blocks[0]?.id || null);
+          setActivePageId(sanitized[0].id);
+          setSelectedBlockId(sanitized[0]?.blocks?.[0]?.id || null);
         }
       } catch {
         // Ignore invalid JSON
@@ -839,7 +848,7 @@ export default function App() {
     setPages(INITIAL_PAGES);
     setGlobalSettings(INITIAL_GLOBAL_SETTINGS);
     setActivePageId(INITIAL_PAGES[0].id);
-    setSelectedBlockId(INITIAL_PAGES[0].blocks[0]?.id || null);
+    setSelectedBlockId(INITIAL_PAGES[0]?.blocks?.[0]?.id || null);
   };
 
   const handleApplyGlobalTheme = (themeId: string) => {
@@ -857,27 +866,42 @@ export default function App() {
   };
 
   const handleApplyStarterKit = (kit: StarterKit) => {
-    const clonedPages: PortfolioPage[] = JSON.parse(JSON.stringify(kit.pages));
+    if (!kit || !kit.pages || kit.pages.length === 0) return;
+    const clonedPages: PortfolioPage[] = JSON.parse(JSON.stringify(kit.pages)).map(
+      (p: PortfolioPage, pIdx: number) => ({
+        ...p,
+        id: createUid(`kit-${pIdx + 1}`),
+        blocks: (p.blocks || []).map((b) => ({
+          ...b,
+          id: createUid('blk'),
+        })),
+      })
+    );
     const nextSettings: GlobalDocumentSettings = {
       ...globalSettings,
       pageSize: kit.pageSize,
       portfolioTitle: kit.name,
       headerLeftText: kit.name,
-      footerLeftText: kit.author,
+      footerLeftText: kit.name,
+      ...(kit.globalSettings || {}),
     };
     setPages(clonedPages);
     setGlobalSettings(nextSettings);
     pushHistory(clonedPages);
     setActivePageId(clonedPages[0]?.id || 'page-1');
-    setSelectedBlockId(clonedPages[0]?.blocks[0]?.id || null);
+    setSelectedBlockId(clonedPages[0]?.blocks?.[0]?.id || null);
     setIsStarterKitsModalOpen(false);
   };
 
   const handleSelectStockPlate = (plate: StockVisualPlate) => {
+    if (!currentPage) return;
+    const currentBlocks = currentPage.blocks || [];
+
     if (
       selectedBlock &&
-      (selectedBlock.type === 'image-full' ||
-        selectedBlock.type === 'split-showcase' ||
+      (selectedBlock.type === 'image' ||
+        selectedBlock.type === 'split-media-text' ||
+        selectedBlock.type === 'dual-image' ||
         selectedBlock.type === 'device-mockup' ||
         selectedBlock.type === 'before-after')
     ) {
@@ -888,7 +912,7 @@ export default function App() {
         gridImages: [
           ...grid,
           {
-            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            id: createUid('img'),
             url: plate.url,
             caption: `${plate.title} · ${plate.caption}`,
           },
@@ -896,15 +920,32 @@ export default function App() {
       });
     } else {
       const newBlock: PortfolioBlock = {
-        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        type: 'image-full',
+        id: createUid('blk'),
+        type: 'image',
         imageUrl: plate.url,
-        caption: `${plate.title} — ${plate.caption}`,
-        imageHeightPx: 460,
-        imageObjectFit: 'cover',
+        imageCaption: `${plate.title} — ${plate.caption}`,
+        imageStyle: {
+          height: 440,
+          objectFit: 'cover',
+          zoom: 1,
+          filter: 'none',
+          borderRadius: 0,
+          showBorder: false,
+        },
+        textStyle: {
+          fontFamily: globalSettings.monoFont,
+          fontSize: 11,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          textDecoration: 'none',
+          textAlign: 'left',
+          lineHeight: 1.4,
+          letterSpacing: 0.05,
+          textTransform: 'uppercase',
+        },
       };
       handleUpdatePage({
-        blocks: [...currentPage.blocks, newBlock],
+        blocks: [...currentBlocks, newBlock],
       });
       setSelectedBlockId(newBlock.id);
     }
@@ -912,37 +953,55 @@ export default function App() {
   };
 
   const handleInsertDroppedImages = (imageUrls: string[]) => {
-    if (!imageUrls || imageUrls.length === 0) return;
+    if (!imageUrls || imageUrls.length === 0 || !currentPage) return;
+    const currentBlocks = currentPage.blocks || [];
 
     if (imageUrls.length === 1) {
       const newBlock: PortfolioBlock = {
-        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        type: 'image-full',
+        id: createUid('blk'),
+        type: 'image',
         imageUrl: imageUrls[0],
-        caption: 'Imported Plate — Visual Study',
-        imageHeightPx: 440,
-        imageObjectFit: 'cover',
+        imageCaption: 'Imported Plate — Visual Study',
+        imageStyle: {
+          height: 440,
+          objectFit: 'cover',
+          zoom: 1,
+          filter: 'none',
+          borderRadius: 0,
+          showBorder: false,
+        },
+        textStyle: {
+          fontFamily: globalSettings.monoFont,
+          fontSize: 11,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          textDecoration: 'none',
+          textAlign: 'left',
+          lineHeight: 1.4,
+          letterSpacing: 0.05,
+          textTransform: 'uppercase',
+        },
       };
       handleUpdatePage({
-        blocks: [...currentPage.blocks, newBlock],
+        blocks: [...currentBlocks, newBlock],
       });
       setSelectedBlockId(newBlock.id);
     } else {
       const cols = imageUrls.length === 2 ? 2 : imageUrls.length <= 4 ? 2 : 3;
       const newBlock: PortfolioBlock = {
-        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        id: createUid('blk'),
         type: 'multi-photo-grid',
         gridColumns: cols,
         gridGapPx: 16,
         gridAspectRatio: '4/3',
         gridImages: imageUrls.map((url, i) => ({
-          id: `img-${Date.now()}-${i}`,
+          id: createUid('img'),
           url,
           caption: `Plate ${i + 1} — Visual Detail`,
         })),
       };
       handleUpdatePage({
-        blocks: [...currentPage.blocks, newBlock],
+        blocks: [...currentBlocks, newBlock],
       });
       setSelectedBlockId(newBlock.id);
     }
@@ -1300,7 +1359,7 @@ export default function App() {
                     onDrop={() => handlePageDrop(idx)}
                     onClick={() => {
                       setActivePageId(p.id);
-                      setSelectedBlockId(p.blocks[0]?.id || null);
+                      setSelectedBlockId(p.blocks?.[0]?.id || null);
                       if (workspaceMode === 'spread') {
                         setWorkspaceMode('single');
                       }
@@ -1324,7 +1383,7 @@ export default function App() {
                             </span>
                           </div>
                           <div className="text-[10px] text-stone-500 mt-0.5 truncate">
-                            {p.blocks.length} blocks · {p.sectionLabel}
+                            {(p.blocks || []).length} blocks · {p.sectionLabel}
                           </div>
                         </div>
                       </div>

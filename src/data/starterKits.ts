@@ -76,11 +76,11 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-arch-p3',
         title: 'Before & After Transformation',
         sectionLabel: '03 · Renovation Study',
-        templateId: 'before-after-case',
+        templateId: 'before-after-spread',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'before-after-case',
+          'before-after-spread',
           "'Cormorant Garamond', Georgia, serif",
           "'Plus Jakarta Sans', -apple-system, sans-serif",
           "'JetBrains Mono', monospace"
@@ -90,11 +90,11 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-arch-p4',
         title: 'Specifications & Gallery',
         sectionLabel: '04 · Technical Index',
-        templateId: 'photo-grid-dense',
+        templateId: 'case-study',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'photo-grid-dense',
+          'case-study',
           "'Cormorant Garamond', Georgia, serif",
           "'Plus Jakarta Sans', -apple-system, sans-serif",
           "'JetBrains Mono', monospace"
@@ -134,12 +134,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-int-p1',
         title: 'Landscape Title Sheet',
         sectionLabel: '01 · Project Overview',
-        templateId: 'landscape-cover-hero',
+        templateId: 'cover-landscape',
         pageSizeOverride: 'a4-landscape',
         hideHeader: true,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'landscape-cover-hero',
+          'cover-landscape',
           "'Playfair Display', Georgia, serif",
           "'Inter', -apple-system, sans-serif",
           "'IBM Plex Mono', monospace"
@@ -149,12 +149,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-int-p2',
         title: 'Material Moodboard Spread',
         sectionLabel: '02 · Finishes & Palette',
-        templateId: 'dual-plate-study',
+        templateId: 'dual-comparison',
         pageSizeOverride: 'a4-landscape',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'dual-plate-study',
+          'dual-comparison',
           "'Playfair Display', Georgia, serif",
           "'Inter', -apple-system, sans-serif",
           "'IBM Plex Mono', monospace"
@@ -164,12 +164,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-int-p3',
         title: 'Spatial Transformation',
         sectionLabel: '03 · Renovation Analysis',
-        templateId: 'landscape-case-study',
+        templateId: 'before-after-spread',
         pageSizeOverride: 'a4-landscape',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'landscape-case-study',
+          'before-after-spread',
           "'Playfair Display', Georgia, serif",
           "'Inter', -apple-system, sans-serif",
           "'IBM Plex Mono', monospace"
@@ -179,12 +179,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-int-p4',
         title: 'Detail Gallery & Finishes',
         sectionLabel: '04 · Joinery Index',
-        templateId: 'landscape-photo-quad',
+        templateId: 'photo-lookbook',
         pageSizeOverride: 'a4-landscape',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'landscape-photo-quad',
+          'photo-lookbook',
           "'Playfair Display', Georgia, serif",
           "'Inter', -apple-system, sans-serif",
           "'IBM Plex Mono', monospace"
@@ -237,12 +237,12 @@ export const STARTER_KITS: StarterKit[] = [
       {
         id: 'kit-exec-p2',
         title: 'Curated Works & Projects',
-        sectionLabel: '02 · Featured Portfolios',
-        templateId: 'photo-grid-dense',
+        sectionLabel: '02 · Practice & Profile',
+        templateId: 'biography-cv',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'photo-grid-dense',
+          'biography-cv',
           "'Plus Jakarta Sans', -apple-system, sans-serif",
           "'Plus Jakarta Sans', -apple-system, sans-serif",
           "'JetBrains Mono', monospace"
@@ -282,12 +282,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-deck-p1',
         title: 'Title Slide',
         sectionLabel: '01 · Project Title',
-        templateId: 'landscape-cover-hero',
+        templateId: 'cover-landscape',
         pageSizeOverride: 'deck-16-9',
         hideHeader: true,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'landscape-cover-hero',
+          'cover-landscape',
           "'Space Grotesk', -apple-system, sans-serif",
           "'Inter', -apple-system, sans-serif",
           "'Space Mono', monospace"
@@ -297,12 +297,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-deck-p2',
         title: 'Spatial Concept & Narrative',
         sectionLabel: '02 · Concept Design',
-        templateId: 'landscape-case-study',
+        templateId: 'visual-showcase',
         pageSizeOverride: 'deck-16-9',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'landscape-case-study',
+          'visual-showcase',
           "'Space Grotesk', -apple-system, sans-serif",
           "'Inter', -apple-system, sans-serif",
           "'Space Mono', monospace"
@@ -312,12 +312,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-deck-p3',
         title: 'Materiality & Plates',
         sectionLabel: '03 · Tectonic Systems',
-        templateId: 'dual-plate-study',
+        templateId: 'dual-comparison',
         pageSizeOverride: 'deck-16-9',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'dual-plate-study',
+          'dual-comparison',
           "'Space Grotesk', -apple-system, sans-serif",
           "'Inter', -apple-system, sans-serif",
           "'Space Mono', monospace"
@@ -327,12 +327,12 @@ export const STARTER_KITS: StarterKit[] = [
         id: 'kit-deck-p4',
         title: 'Gallery & Deliverables',
         sectionLabel: '04 · Masterplan Grid',
-        templateId: 'landscape-photo-quad',
+        templateId: 'architecture-detail',
         pageSizeOverride: 'deck-16-9',
         hideHeader: false,
         hideFooter: false,
         blocks: createBlocksForTemplate(
-          'landscape-photo-quad',
+          'architecture-detail',
           "'Space Grotesk', -apple-system, sans-serif",
           "'Inter', -apple-system, sans-serif",
           "'Space Mono', monospace"

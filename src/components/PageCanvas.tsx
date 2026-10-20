@@ -209,7 +209,8 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      const targetBlock = page.blocks.find((b) => b.id === target.blockId);
+      const pageBlocks = page?.blocks || [];
+      const targetBlock = pageBlocks.find((b) => b.id === target.blockId);
 
       if (target.field === 'secondaryImageUrl') {
         onUpdateBlock(target.blockId, { secondaryImageUrl: dataUrl });
@@ -247,7 +248,8 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      const targetBlock = page.blocks.find((b) => b.id === blockId);
+      const pageBlocks = page?.blocks || [];
+      const targetBlock = pageBlocks.find((b) => b.id === blockId);
 
       if (field === 'secondaryImageUrl') {
         onUpdateBlock(blockId, { secondaryImageUrl: dataUrl });
@@ -1730,7 +1732,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         {/* Main Page Content Blocks */}
         <div className="flex-1 flex flex-col justify-between gap-6 min-h-0">
           <div className="flex flex-col gap-6">
-            {page.blocks.length === 0 && !isExportMode && (
+            {(page?.blocks || []).length === 0 && !isExportMode && (
               <div className="py-20 px-6 border-2 border-dashed border-stone-200/80 rounded-xl text-center flex flex-col items-center justify-center my-auto">
                 <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-3">
                   <Plus className="w-6 h-6" />
@@ -1741,7 +1743,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                 </p>
               </div>
             )}
-            {page.blocks.map((block, bIdx) => {
+            {(page?.blocks || []).map((block, bIdx) => {
               const isSelected = !isExportMode && selectedBlockId === block.id;
 
               return (
@@ -1787,7 +1789,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                       </button>
                       <button
                         type="button"
-                        disabled={bIdx === page.blocks.length - 1}
+                        disabled={bIdx === (page?.blocks || []).length - 1}
                         onClick={(e) => {
                           e.stopPropagation();
                           onMoveBlock(block.id, 'down');
