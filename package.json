@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "foliopress",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "High-precision editorial & architecture PDF portfolio studio and publication builder",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
