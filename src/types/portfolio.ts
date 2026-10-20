@@ -59,12 +59,33 @@ export type BlockType =
   | 'two-column-text'
   | 'spec-grid'
   | 'pull-quote'
-  | 'divider';
+  | 'divider'
+  | 'device-mockup'
+  | 'color-palette'
+  | 'before-after'
+  | 'qr-code'
+  | 'project-meta'
+  | 'multi-photo-grid';
 
 export interface SpecItem {
   id: string;
   label: string;
   value: string;
+}
+
+export interface ColorSwatch {
+  id: string;
+  hex: string;
+  name: string;
+  code?: string;
+}
+
+export type DeviceMockupType = 'macbook' | 'iphone' | 'ipad';
+
+export interface GridImageItem {
+  id: string;
+  url: string;
+  caption?: string;
 }
 
 export interface PortfolioBlock {
@@ -90,6 +111,26 @@ export interface PortfolioBlock {
   // Divider spacing
   spacingHeight?: number;
   showLine?: boolean;
+  // Device Mockup
+  deviceType?: DeviceMockupType;
+  // Color Palette
+  swatches?: ColorSwatch[];
+  paletteStyle?: 'swatches' | 'circles' | 'minimal-bars';
+  // Before / After
+  beforeImageUrl?: string;
+  beforeCaption?: string;
+  beforeLabel?: string;
+  afterImageUrl?: string;
+  afterCaption?: string;
+  afterLabel?: string;
+  // QR Code
+  qrUrl?: string;
+  qrTitle?: string;
+  qrSubtitle?: string;
+  // Project Meta Strip
+  toolsList?: string[];
+  // Multi-Photo Grid
+  gridImages?: GridImageItem[];
 }
 
 export type PageTemplateId =
@@ -98,7 +139,11 @@ export type PageTemplateId =
   | 'visual-showcase'
   | 'dual-comparison'
   | 'case-study'
-  | 'biography-cv';
+  | 'biography-cv'
+  | 'uiux-casestudy'
+  | 'architecture-detail'
+  | 'photo-lookbook'
+  | 'contact-qr';
 
 export interface PortfolioPage {
   id: string;

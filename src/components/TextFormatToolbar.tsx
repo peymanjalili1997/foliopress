@@ -1,19 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AlignCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
+  ArrowLeftRight,
   Bold,
   Columns,
   FileText,
+  Grid3X3,
   Heading1,
   Image as ImageIcon,
   Italic,
+  Laptop,
   LayoutGrid,
   Minus,
+  Palette,
+  QrCode,
   Quote,
+  Sparkles,
   SplitSquareVertical,
+  Tags,
   Type,
   Underline,
 } from 'lucide-react';
@@ -24,6 +31,7 @@ interface TextFormatToolbarProps {
   selectedBlock: PortfolioBlock | null;
   onUpdateTextStyle: (patch: Partial<TextStyle>) => void;
   onAddBlock: (type: BlockType) => void;
+  onAiPolishText?: (style: 'editorial' | 'concise' | 'technical' | 'grammar') => void;
   defaultHeadingFont: string;
 }
 
@@ -257,18 +265,65 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
               className="w-6 h-6 rounded border border-stone-300 cursor-pointer p-0 bg-transparent"
             />
           </label>
+
+          {/* AI Text Polishing Assistant */}
+          {onAiPolishText && (
+            <div className="relative group/ai">
+              <button
+                type="button"
+                disabled={isDisabled}
+                className="h-7 px-2 text-[11px] font-medium bg-gradient-to-r from-amber-50 to-stone-100 hover:from-amber-100 hover:to-stone-200 border border-amber-300/60 rounded flex items-center gap-1 text-stone-800 transition-colors disabled:opacity-40"
+                title="AI Writing Assistant — Polish or Refine English prose"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>AI Polish</span>
+              </button>
+              {!isDisabled && (
+                <div className="absolute left-0 top-full mt-1 hidden group-hover/ai:flex flex-col bg-white border border-stone-200 rounded-lg shadow-xl py-1 z-30 min-w-[210px]">
+                  <button
+                    type="button"
+                    onClick={() => onAiPolishText('editorial')}
+                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                  >
+                    🏛️ Architectural Monograph Tone
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onAiPolishText('concise')}
+                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                  >
+                    ⚡ Concise & Impactful
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onAiPolishText('technical')}
+                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                  >
+                    📐 Technical / Case Study Precision
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onAiPolishText('grammar')}
+                    className="px-3 py-1.5 text-xs text-left text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                  >
+                    ✍️ Grammar & Vocabulary Polish
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Right: Quick Insert Block Buttons onto Current Page */}
       <div className="flex items-center gap-1 overflow-x-auto py-0.5">
         <span className="text-[11px] font-medium text-stone-400 mr-1 whitespace-nowrap shrink-0">
-          Insert on Page:
+          Insert:
         </span>
         <button
           type="button"
           onClick={() => onAddBlock('heading')}
-          className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
         >
           <Heading1 className="w-3.5 h-3.5" />
           <span>Heading</span>
@@ -276,7 +331,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
         <button
           type="button"
           onClick={() => onAddBlock('paragraph')}
-          className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
         >
           <FileText className="w-3.5 h-3.5" />
           <span>Text</span>
@@ -284,39 +339,77 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
         <button
           type="button"
           onClick={() => onAddBlock('image')}
-          className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
         >
           <ImageIcon className="w-3.5 h-3.5" />
           <span>Image</span>
         </button>
         <button
           type="button"
+          onClick={() => onAddBlock('device-mockup')}
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="MacBook / iPhone Device Mockup Frame"
+        >
+          <Laptop className="w-3.5 h-3.5 text-indigo-600" />
+          <span>Mockup</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddBlock('color-palette')}
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Project Color Palette & Swatches"
+        >
+          <Palette className="w-3.5 h-3.5 text-amber-600" />
+          <span>Palette</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddBlock('before-after')}
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Before / After Project Comparison"
+        >
+          <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Before/After</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddBlock('qr-code')}
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Interactive QR Code Scan Card"
+        >
+          <QrCode className="w-3.5 h-3.5 text-blue-600" />
+          <span>QR Code</span>
+        </button>
+        <button
+          type="button"
           onClick={() => onAddBlock('split-media-text')}
-          className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
         >
           <SplitSquareVertical className="w-3.5 h-3.5" />
-          <span>Image + Text</span>
+          <span>Split</span>
         </button>
         <button
           type="button"
-          onClick={() => onAddBlock('dual-image')}
-          className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+          onClick={() => onAddBlock('multi-photo-grid')}
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="3-Photo Detail Grid"
         >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          <span>Dual Image</span>
+          <Grid3X3 className="w-3.5 h-3.5" />
+          <span>Grid</span>
         </button>
         <button
           type="button"
-          onClick={() => onAddBlock('two-column-text')}
-          className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+          onClick={() => onAddBlock('project-meta')}
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          title="Software & Tools Stack Chips"
         >
-          <Columns className="w-3.5 h-3.5" />
-          <span>2-Col Text</span>
+          <Tags className="w-3.5 h-3.5" />
+          <span>Stack</span>
         </button>
         <button
           type="button"
           onClick={() => onAddBlock('pull-quote')}
-          className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
         >
           <Quote className="w-3.5 h-3.5" />
           <span>Quote</span>
@@ -324,7 +417,7 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
         <button
           type="button"
           onClick={() => onAddBlock('divider')}
-          className="px-2 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
+          className="px-1.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-md flex items-center gap-0.5 transition-colors whitespace-nowrap shrink-0"
           title="Insert Architectural Rule / Spacer"
         >
           <Minus className="w-3.5 h-3.5" />

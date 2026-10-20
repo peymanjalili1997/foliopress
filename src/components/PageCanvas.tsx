@@ -1,24 +1,69 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 import {
   ArrowDown,
   ArrowLeftRight,
   ArrowUp,
   Copy,
+  ExternalLink,
   ImagePlus,
+  Laptop,
+  Palette,
   Plus,
+  QrCode,
+  Smartphone,
   Sparkles,
+  Tablet,
   Trash2,
   Upload,
 } from 'lucide-react';
 import { CURATED_VISUAL_PLATES, PAGE_SIZE_PRESETS } from '../data/editorialAssets';
 import {
+  ColorSwatch,
+  DeviceMockupType,
   GlobalDocumentSettings,
+  GridImageItem,
   ImageFilterType,
   PortfolioBlock,
   PortfolioPage,
   SpecItem,
   TextStyle,
 } from '../types/portfolio';
+import { MockupFrame } from './MockupFrames';
+
+const QrCodeDisplay: React.FC<{ url: string; size?: number; inkColor: string }> = ({
+  url,
+  size = 110,
+  inkColor,
+}) => {
+  const [dataUrl, setDataUrl] = useState<string>('');
+
+  useEffect(() => {
+    QRCode.toDataURL(url || 'https://github.com', {
+      margin: 1,
+      width: size * 2,
+      color: {
+        dark: inkColor || '#111111',
+        light: '#00000000',
+      },
+    })
+      .then(setDataUrl)
+      .catch(() => {});
+  }, [url, size, inkColor]);
+
+  if (!dataUrl) {
+    return <div style={{ width: size, height: size }} className="bg-stone-200/50 animate-pulse rounded" />;
+  }
+
+  return (
+    <img
+      src={dataUrl}
+      alt="QR Code"
+      style={{ width: `${size}px`, height: `${size}px` }}
+      className="block"
+    />
+  );
+};
 
 interface PageCanvasProps {
   page: PortfolioPage;
@@ -644,6 +689,552 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
             )}
           </div>
         );
+
+      case 'device-mockup': {
+        const deviceType = block.deviceType || 'macbook';
+        return (
+          <div className="flex flex-col items-center gap-3 w-full">
+            {!isExportMode && (
+              <div className="flex items-center gap-1.5 p-1 bg-stone-100 rounded-lg text-xs">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUpdateBlock(block.id, { deviceType: 'macbook' });
+                  }}
+                  className={`px-2.5 py-1 rounded flex items-center gap-1 font-medium ${
+                    deviceType === 'macbook' ? 'bg-white text-stone-900 shadow-2xs' : 'text-stone-600'
+                  }`}
+                >
+                  <Laptop className="w-3.5 h-3.5" />
+                  <span>MacBook</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUpdateBlock(block.id, { deviceType: 'iphone' });
+                  }}
+                  className={`px-2.5 py-1 rounded flex items-center gap-1 font-medium ${
+                    deviceType === 'iphone' ? 'bg-white text-stone-900 shadow-2xs' : 'text-stone-600'
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>iPhone</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUpdateBlock(block.id, { deviceType: 'ipad' });
+                  }}
+                  className={`px-2.5 py-1 rounded flex items-center gap-1 font-medium ${
+                    deviceType === 'ipad' ? 'bg-white text-stone-900 shadow-2xs' : 'text-stone-600'
+                  }`}
+                >
+                  <Tablet className="w-3.5 h-3.5" />
+                  <span>iPad</span>
+                </button>
+                <span className="text-stone-300">|</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerImageUpload(block.id);
+                  }}
+                  className="px-2 py-1 rounded bg-stone-900 text-white flex items-center gap-1 text-[11px]"
+                >
+                  <Upload className="w-3 h-3" />
+                  <span>Upload Screen</span>
+                </button>
+              </div>
+            )}
+
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDropFile(e, block.id, false)}
+              className="w-full flex justify-center cursor-pointer"
+            >
+              <MockupFrame
+                deviceType={deviceType}
+                imageUrl={block.imageUrl}
+                zoom={block.imageStyle?.zoom}
+                filter={block.imageStyle?.filter}
+                caption={block.imageCaption}
+              />
+            </div>
+
+            {(block.imageCaption !== undefined || !isExportMode) && (
+              <div className="w-full text-center max-w-lg">
+                {renderEditableText(
+                  block.imageCaption || '',
+                  (val) => onUpdateBlock(block.id, { imageCaption: val }),
+                  {
+                    fontFamily: globalSettings.monoFont,
+                    fontSize: '11px',
+                    fontWeight: 400,
+                    color: mutedInk,
+                    textAlign: 'center',
+                  },
+                  'Fig. — Live digital interface mockup caption...',
+                  false
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case 'color-palette': {
+        const swatches: ColorSwatch[] = block.swatches || [
+          { id: 'sw-1', hex: '#161514', name: 'Obsidian Ink', code: 'Base Text' },
+          { id: 'sw-2', hex: '#FAF8F5', name: 'Cotton Archival', code: 'Canvas Surface' },
+          { id: 'sw-3', hex: '#9A3412', name: 'Terracotta Ochre', code: 'Primary Focal' },
+          { id: 'sw-4', hex: '#D5CCBC', name: 'Honed Travertine', code: 'Material Tint' },
+          { id: 'sw-5', hex: '#2D373C', name: 'Deep Basalt', code: 'Structure' },
+        ];
+
+        const updateSwatch = (idx: number, patch: Partial<ColorSwatch>) => {
+          const next = swatches.map((s, i) => (i === idx ? { ...s, ...patch } : s));
+          onUpdateBlock(block.id, { swatches: next });
+        };
+
+        const addSwatch = () => {
+          onUpdateBlock(block.id, {
+            swatches: [
+              ...swatches,
+              { id: `sw-${Date.now()}`, hex: '#0F766E', name: 'New Color', code: 'Accent' },
+            ],
+          });
+        };
+
+        const removeSwatch = (idx: number) => {
+          onUpdateBlock(block.id, {
+            swatches: swatches.filter((_, i) => i !== idx),
+          });
+        };
+
+        return (
+          <div style={{ borderColor: borderCol }} className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span
+                style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                className="text-[10px] tracking-widest uppercase"
+              >
+                PROJECT MATERIALITY & COLOR PALETTE
+              </span>
+              {!isExportMode && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addSwatch();
+                  }}
+                  className="text-[11px] font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Swatch</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {swatches.map((swatch, idx) => (
+                <div
+                  key={swatch.id}
+                  className="group/swatch relative flex flex-col gap-1.5 p-2 rounded-lg bg-stone-50/60 border border-stone-200/80"
+                >
+                  <div
+                    style={{ backgroundColor: swatch.hex }}
+                    className="relative w-full h-16 rounded-md shadow-inner border border-black/10 flex items-end justify-start p-1.5 overflow-hidden"
+                  >
+                    {!isExportMode && (
+                      <input
+                        type="color"
+                        value={swatch.hex}
+                        onChange={(e) => updateSwatch(idx, { hex: e.target.value })}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        title="Click to change color"
+                      />
+                    )}
+                  </div>
+
+                  <span
+                    style={{ fontFamily: globalSettings.monoFont }}
+                    className="text-[11px] font-mono font-semibold text-stone-800 uppercase"
+                  >
+                    {swatch.hex}
+                  </span>
+
+                  {renderEditableText(
+                    swatch.name,
+                    (val) => updateSwatch(idx, { name: val }),
+                    {
+                      fontFamily: globalSettings.bodyFont,
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      color: pageInk,
+                      lineHeight: 1.3,
+                    },
+                    'Color Name',
+                    false
+                  )}
+
+                  {renderEditableText(
+                    swatch.code || '',
+                    (val) => updateSwatch(idx, { code: val }),
+                    {
+                      fontFamily: globalSettings.monoFont,
+                      fontSize: '9.5px',
+                      color: mutedInk,
+                      lineHeight: 1.3,
+                    },
+                    'Role / Material',
+                    false
+                  )}
+
+                  {!isExportMode && swatches.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeSwatch(idx);
+                      }}
+                      className="absolute top-1 right-1 opacity-0 group-hover/swatch:opacity-100 p-1 text-stone-400 hover:text-red-600 transition-opacity"
+                      title="Remove Swatch"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case 'before-after': {
+        const beforeImg = block.beforeImageUrl || block.imageUrl || CURATED_VISUAL_PLATES[1].url;
+        const afterImg =
+          block.afterImageUrl || block.secondaryImageUrl || CURATED_VISUAL_PLATES[0].url;
+
+        return (
+          <div className="space-y-3 w-full">
+            <div className="grid grid-cols-2 gap-5 items-start">
+              {/* Left: Before Plate */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span
+                    style={{ fontFamily: globalSettings.monoFont, color: accentCol }}
+                    className="text-[10px] tracking-widest uppercase font-semibold"
+                  >
+                    {block.beforeLabel || 'BEFORE RECONSTRUCTION'}
+                  </span>
+                  {!isExportMode && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerImageUpload(block.id, false);
+                      }}
+                      className="text-[10px] text-stone-500 hover:text-stone-900 flex items-center gap-1"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Upload</span>
+                    </button>
+                  )}
+                </div>
+                <div
+                  style={{
+                    height: `${block.imageStyle?.height || 280}px`,
+                    borderRadius: `${block.imageStyle?.borderRadius || 0}px`,
+                  }}
+                  className="w-full overflow-hidden bg-stone-200/50 relative shadow-inner"
+                >
+                  <img
+                    src={beforeImg}
+                    alt="Before"
+                    className="w-full h-full object-cover"
+                    style={{ filter: getFilterCss(block.imageStyle?.filter) }}
+                  />
+                </div>
+                {renderEditableText(
+                  block.beforeCaption || '',
+                  (val) => onUpdateBlock(block.id, { beforeCaption: val }),
+                  {
+                    fontFamily: globalSettings.monoFont,
+                    fontSize: '10.5px',
+                    color: mutedInk,
+                  },
+                  'Add before state notes or date...',
+                  false
+                )}
+              </div>
+
+              {/* Right: After Plate */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span
+                    style={{ fontFamily: globalSettings.monoFont, color: accentCol }}
+                    className="text-[10px] tracking-widest uppercase font-semibold"
+                  >
+                    {block.afterLabel || 'FINAL ARCHITECTURAL COMPLETION'}
+                  </span>
+                  {!isExportMode && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerImageUpload(block.id, true);
+                      }}
+                      className="text-[10px] text-stone-500 hover:text-stone-900 flex items-center gap-1"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Upload</span>
+                    </button>
+                  )}
+                </div>
+                <div
+                  style={{
+                    height: `${block.imageStyle?.height || 280}px`,
+                    borderRadius: `${block.imageStyle?.borderRadius || 0}px`,
+                  }}
+                  className="w-full overflow-hidden bg-stone-200/50 relative shadow-inner"
+                >
+                  <img
+                    src={afterImg}
+                    alt="After"
+                    className="w-full h-full object-cover"
+                    style={{ filter: getFilterCss(block.imageStyle?.filter) }}
+                  />
+                </div>
+                {renderEditableText(
+                  block.afterCaption || '',
+                  (val) => onUpdateBlock(block.id, { afterCaption: val }),
+                  {
+                    fontFamily: globalSettings.monoFont,
+                    fontSize: '10.5px',
+                    color: mutedInk,
+                  },
+                  'Add completed realization details...',
+                  false
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      case 'qr-code': {
+        const targetUrl = block.qrUrl || 'https://peymanjalili1997.github.io/foliopress/';
+
+        return (
+          <div
+            style={{ borderColor: borderCol, backgroundColor: `${pageInk}06` }}
+            className="p-5 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-6"
+          >
+            <div className="flex flex-col gap-1.5 text-left max-w-md">
+              <span
+                style={{ fontFamily: globalSettings.monoFont, color: accentCol }}
+                className="text-[10px] font-semibold tracking-widest uppercase"
+              >
+                INTERACTIVE CLIENT DISCOVERY
+              </span>
+              <div className="text-base font-semibold text-stone-950">
+                {renderEditableText(
+                  block.qrTitle || 'Scan to Experience Full Digital Portfolio & Case Studies',
+                  (val) => onUpdateBlock(block.id, { qrTitle: val }),
+                  {
+                    fontFamily: globalSettings.headingFont,
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    color: pageInk,
+                    lineHeight: 1.25,
+                  },
+                  'Enter QR Code Headline...',
+                  false
+                )}
+              </div>
+              <div className="text-xs text-stone-600">
+                {renderEditableText(
+                  block.qrSubtitle ||
+                    'Scan with any smartphone camera to view live responsive prototype, video showreels, and verified client testimonials.',
+                  (val) => onUpdateBlock(block.id, { qrSubtitle: val }),
+                  {
+                    fontFamily: globalSettings.bodyFont,
+                    fontSize: '12px',
+                    color: mutedInk,
+                    lineHeight: 1.5,
+                  },
+                  'Enter description text...',
+                  true
+                )}
+              </div>
+
+              {!isExportMode && (
+                <div className="pt-2 flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-stone-400">Target URL:</span>
+                  <input
+                    type="url"
+                    dir="ltr"
+                    value={targetUrl}
+                    onChange={(e) => onUpdateBlock(block.id, { qrUrl: e.target.value })}
+                    placeholder="https://..."
+                    className="h-7 px-2 text-xs font-mono bg-white border border-stone-200 rounded text-stone-900 focus:outline-none focus:border-stone-900 min-w-[220px]"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 bg-white rounded-lg shadow-sm border border-stone-200 flex flex-col items-center gap-1 shrink-0">
+              <QrCodeDisplay url={targetUrl} size={114} inkColor={pageInk} />
+              <span
+                style={{ fontFamily: globalSettings.monoFont }}
+                className="text-[9px] uppercase tracking-wider text-stone-500 pt-0.5 font-medium"
+              >
+                SCAN NOW
+              </span>
+            </div>
+          </div>
+        );
+      }
+
+      case 'project-meta': {
+        const tools = block.toolsList || ['Figma', 'Blender 3D', 'Rhino 8', 'AutoCAD', 'React', 'Lightroom'];
+        const updateTool = (idx: number, val: string) => {
+          const next = [...tools];
+          next[idx] = val;
+          onUpdateBlock(block.id, { toolsList: next });
+        };
+        const addTool = () => {
+          onUpdateBlock(block.id, { toolsList: [...tools, 'New Tool'] });
+        };
+        const removeTool = (idx: number) => {
+          onUpdateBlock(block.id, { toolsList: tools.filter((_, i) => i !== idx) });
+        };
+
+        return (
+          <div style={{ borderColor: borderCol }} className="border-t border-b py-3.5 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span style={{ fontFamily: globalSettings.monoFont, color: mutedInk }} className="text-[10px] tracking-wider uppercase font-medium">
+                  SOFTWARE & EXECUTION STACK:
+                </span>
+              </div>
+              {!isExportMode && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addTool();
+                  }}
+                  className="text-[11px] text-stone-500 hover:text-stone-900 flex items-center gap-1 font-medium"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Tool</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {tools.map((tool, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    borderColor: borderCol,
+                    fontFamily: globalSettings.monoFont,
+                    color: pageInk,
+                  }}
+                  className="group/tool inline-flex items-center gap-1.5 px-3 py-1 bg-stone-100/80 border rounded-full text-xs font-medium"
+                >
+                  {renderEditableText(
+                    tool,
+                    (val) => updateTool(idx, val),
+                    {
+                      fontSize: '11px',
+                      fontFamily: globalSettings.monoFont,
+                      color: pageInk,
+                    },
+                    'Tool',
+                    false
+                  )}
+                  {!isExportMode && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTool(idx);
+                      }}
+                      className="opacity-0 group-hover/tool:opacity-100 text-stone-400 hover:text-red-500"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case 'multi-photo-grid': {
+        const gridItems: GridImageItem[] = block.gridImages || [
+          { id: 'img-1', url: CURATED_VISUAL_PLATES[1].url, caption: 'Detail A — Raw Stone Texture' },
+          { id: 'img-2', url: CURATED_VISUAL_PLATES[2].url, caption: 'Detail B — Anodized Bevel' },
+          { id: 'img-3', url: CURATED_VISUAL_PLATES[3].url, caption: 'Detail C — Axonometric Joinery' },
+        ];
+
+        return (
+          <div className="grid grid-cols-3 gap-4 w-full">
+            {gridItems.map((item, idx) => (
+              <div key={item.id} className="flex flex-col gap-1.5">
+                <div
+                  style={{
+                    height: `${block.imageStyle?.height || 210}px`,
+                    borderRadius: `${block.imageStyle?.borderRadius || 0}px`,
+                  }}
+                  className="w-full overflow-hidden bg-stone-200/50 shadow-inner relative group/gridimg"
+                >
+                  <img src={item.url} alt={item.caption} className="w-full h-full object-cover" />
+                  {!isExportMode && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const nextPlates = CURATED_VISUAL_PLATES;
+                        const nextItem = nextPlates[(idx + 2) % nextPlates.length];
+                        const nextGrid = gridItems.map((it, i) =>
+                          i === idx ? { ...it, url: nextItem.url } : it
+                        );
+                        onUpdateBlock(block.id, { gridImages: nextGrid });
+                      }}
+                      className="absolute bottom-2 right-2 opacity-0 group-hover/gridimg:opacity-100 px-2 py-1 bg-stone-900/80 text-white text-[10px] rounded transition-opacity"
+                    >
+                      Swap Plate
+                    </button>
+                  )}
+                </div>
+                {renderEditableText(
+                  item.caption || '',
+                  (val) => {
+                    const nextGrid = gridItems.map((it, i) =>
+                      i === idx ? { ...it, caption: val } : it
+                    );
+                    onUpdateBlock(block.id, { gridImages: nextGrid });
+                  },
+                  {
+                    fontFamily: globalSettings.monoFont,
+                    fontSize: '10px',
+                    color: mutedInk,
+                  },
+                  'Detail caption...',
+                  false
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
     }
   };
 

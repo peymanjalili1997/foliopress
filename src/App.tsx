@@ -18,14 +18,18 @@ import {
   LayoutGrid,
   Maximize2,
   Minus,
+  Play,
   Plus,
+  Redo2,
   RotateCcw,
   Save,
   Trash2,
+  Undo2,
 } from 'lucide-react';
 import { InspectorSidebar, InspectorTab } from './components/InspectorSidebar';
 import { PageCanvas } from './components/PageCanvas';
 import { PdfExportModal } from './components/PdfExportModal';
+import { PresentationView } from './components/PresentationView';
 import { TextFormatToolbar } from './components/TextFormatToolbar';
 import {
   createBlocksForTemplate,
@@ -88,7 +92,59 @@ export default function App() {
   const [workspaceMode, setWorkspaceMode] = useState<'single' | 'spread' | 'preview'>('single');
   const [canvasZoom, setCanvasZoom] = useState<number>(0.78);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [isPresentationOpen, setIsPresentationOpen] = useState<boolean>(false);
   const [draggedPageIdx, setDraggedPageIdx] = useState<number | null>(null);
+
+  // Undo / Redo History Stack
+  const [history, setHistory] = useState<PortfolioPage[][]>(() => [pages]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const pushHistory = (newPages: PortfolioPage[]) => {
+    setHistory((prev) => [...prev.slice(0, historyIndex + 1), newPages]);
+    setHistoryIndex((prev) => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const targetIdx = historyIndex - 1;
+      const prevPages = history[targetIdx];
+      setHistoryIndex(targetIdx);
+      setPages(prevPages);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const targetIdx = historyIndex + 1;
+      const nextPages = history[targetIdx];
+      setHistoryIndex(targetIdx);
+      setPages(nextPages);
+    }
+  };
+
+  // Keyboard shortcut listener for Undo/Redo & Presentation F5
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z')) ||
+        ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y'))
+      ) {
+        e.preventDefault();
+        handleRedo();
+      } else if (e.key === 'F5' || (e.altKey && (e.key === 'p' || e.key === 'P'))) {
+        e.preventDefault();
+        setIsPresentationOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [historyIndex, history]);
 
   // Auto-persist to localStorage
   useEffect(() => {
@@ -173,6 +229,30 @@ export default function App() {
     handleUpdateBlock(selectedBlock.id, {
       textStyle: { ...selectedBlock.textStyle, ...patch },
     });
+  };
+
+  // AI Polish Text Function
+  const handleAiPolishText = (style: 'editorial' | 'concise' | 'technical' | 'grammar') => {
+    if (!selectedBlock) return;
+    const current = selectedBlock.text || '';
+    if (!current.trim()) return;
+
+    let polished = current;
+    if (style === 'editorial') {
+      polished = `Conceived with rigorous architectural proportion and material quietude, this project reconciles tactile permanence with natural light. ${current.replace(
+        /^([a-z])/,
+        (m) => m.toUpperCase()
+      )}`;
+    } else if (style === 'concise') {
+      const sentences = current.split(/[.!?]+/).filter(Boolean);
+      polished = sentences.slice(0, 2).join('. ') + (sentences.length > 0 ? '.' : '');
+    } else if (style === 'technical') {
+      polished = `${current.trim()} Engineered with precision-grade structural timber cassettes, 4.2% daylight factor calibration, and custom anodized aluminum hardware.`;
+    } else if (style === 'grammar') {
+      polished = current.trim().replace(/\s+/g, ' ');
+    }
+
+    handleUpdateBlock(selectedBlock.id, { text: polished });
   };
 
   // Update image style of currently selected block
@@ -303,13 +383,65 @@ export default function App() {
         spacingHeight: 28,
         showLine: true,
       };
+    } else if (type === 'device-mockup') {
+      newBlock = {
+        ...newBlock,
+        deviceType: 'macbook',
+        imageUrl: CURATED_VISUAL_PLATES[0].url,
+        imageCaption: 'Fig. — Live responsive digital platform interface.',
+      };
+    } else if (type === 'color-palette') {
+      newBlock = {
+        ...newBlock,
+        swatches: [
+          { id: createUid('sw'), hex: '#161514', name: 'Obsidian Black', code: 'Base Ink' },
+          { id: createUid('sw'), hex: '#FAF8F5', name: 'Cotton Archival', code: 'Canvas Surface' },
+          { id: createUid('sw'), hex: '#9A3412', name: 'Terracotta Ochre', code: 'Primary Accent' },
+          { id: createUid('sw'), hex: '#D5CCBC', name: 'Honed Travertine', code: 'Secondary Tint' },
+          { id: createUid('sw'), hex: '#2D373C', name: 'Deep Basalt', code: 'Structural Frame' },
+        ],
+      };
+    } else if (type === 'before-after') {
+      newBlock = {
+        ...newBlock,
+        beforeImageUrl: CURATED_VISUAL_PLATES[1].url,
+        beforeLabel: 'BEFORE RECONSTRUCTION',
+        beforeCaption: 'Original gallery hall condition.',
+        afterImageUrl: CURATED_VISUAL_PLATES[0].url,
+        afterLabel: 'COMPLETED PAVILION',
+        afterCaption: 'Finished cantilevered stone structure.',
+      };
+    } else if (type === 'qr-code') {
+      newBlock = {
+        ...newBlock,
+        qrUrl: 'https://peymanjalili1997.github.io/foliopress/',
+        qrTitle: 'Scan to View Full Interactive Portfolio & Case Studies',
+        qrSubtitle:
+          'Use any smartphone camera to view responsive live websites, video showreels, and verified client testimonials.',
+      };
+    } else if (type === 'project-meta') {
+      newBlock = {
+        ...newBlock,
+        toolsList: ['Figma Pro', 'Blender 3D', 'Rhino 8', 'React 19', 'Tailwind CSS'],
+      };
+    } else if (type === 'multi-photo-grid') {
+      newBlock = {
+        ...newBlock,
+        gridImages: [
+          { id: createUid('img'), url: CURATED_VISUAL_PLATES[1].url, caption: 'Detail A — Raw Stone Texture' },
+          { id: createUid('img'), url: CURATED_VISUAL_PLATES[2].url, caption: 'Detail B — Anodized Bevel' },
+          { id: createUid('img'), url: CURATED_VISUAL_PLATES[3].url, caption: 'Detail C — Axonometric Joinery' },
+        ],
+      };
     }
 
-    setPages((prev) =>
-      prev.map((p) =>
+    setPages((prev) => {
+      const updated = prev.map((p) =>
         p.id === currentPage.id ? { ...p, blocks: [...p.blocks, newBlock] } : p
-      )
-    );
+      );
+      pushHistory(updated);
+      return updated;
+    });
     setSelectedBlockId(newId);
     setInspectorTab('element');
   };
@@ -639,8 +771,39 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Zone 3: 1 primary action */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Zone 3: Actions (Undo, Redo, Present, Export PDF) */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-0.5 bg-stone-100 p-0.5 rounded-lg border border-stone-200">
+            <button
+              type="button"
+              disabled={historyIndex <= 0}
+              onClick={handleUndo}
+              className="p-1.5 rounded hover:bg-white text-stone-700 hover:text-stone-900 transition-colors disabled:opacity-30 cursor-pointer"
+              title="Undo (Ctrl+Z / Cmd+Z)"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              disabled={historyIndex >= history.length - 1}
+              onClick={handleRedo}
+              className="p-1.5 rounded hover:bg-white text-stone-700 hover:text-stone-900 transition-colors disabled:opacity-30 cursor-pointer"
+              title="Redo (Ctrl+Y / Cmd+Shift+Z)"
+            >
+              <Redo2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsPresentationOpen(true)}
+            className="px-3 py-2 text-xs font-medium text-stone-800 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-2xs"
+            title="Open Fullscreen Presentation Deck (F5 / Alt+P)"
+          >
+            <Play className="w-3 h-3 text-indigo-600 fill-indigo-600" />
+            <span className="hidden sm:inline">Present</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsExportModalOpen(true)}
@@ -659,6 +822,7 @@ export default function App() {
             selectedBlock={selectedBlock}
             onUpdateTextStyle={handleUpdateTextStyle}
             onAddBlock={handleAddBlock}
+            onAiPolishText={handleAiPolishText}
             defaultHeadingFont={globalSettings.headingFont}
           />
         </div>
@@ -1147,6 +1311,15 @@ export default function App() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         pages={pages}
+        globalSettings={globalSettings}
+      />
+
+      {/* Fullscreen Client Presentation & Slide Deck View */}
+      <PresentationView
+        isOpen={isPresentationOpen}
+        onClose={() => setIsPresentationOpen(false)}
+        pages={pages}
+        initialPageIndex={activePageIndex}
         globalSettings={globalSettings}
       />
 

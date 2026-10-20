@@ -84,7 +84,10 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
     selectedBlock &&
     (selectedBlock.type === 'image' ||
       selectedBlock.type === 'split-media-text' ||
-      selectedBlock.type === 'dual-image');
+      selectedBlock.type === 'dual-image' ||
+      selectedBlock.type === 'device-mockup' ||
+      selectedBlock.type === 'before-after' ||
+      selectedBlock.type === 'multi-photo-grid');
 
   const currentImgStyle: ImageStyle = selectedBlock?.imageStyle || {
     height: 360,
