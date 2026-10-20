@@ -153,6 +153,8 @@ export interface PortfolioBlock {
   // Multi-Photo Grid
   gridImages?: GridImageItem[];
   gridColumns?: 2 | 3 | 4;
+  gridGapPx?: number;
+  gridAspectRatio?: string;
   // Client Testimonial & Review
   clientName?: string;
   clientRole?: string;
@@ -187,7 +189,7 @@ export interface PortfolioPage {
   id: string;
   title: string;
   sectionLabel: string;
-  templateId: PageTemplateId;
+  templateId?: PageTemplateId;
   backgroundColor?: string; // Optional per-page override
   textColor?: string;
   pageSizeOverride?: PageSizeId; // Optional per-page orientation / dimension override

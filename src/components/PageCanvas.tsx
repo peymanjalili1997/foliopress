@@ -21,7 +21,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import { CURATED_VISUAL_PLATES, PAGE_SIZE_PRESETS } from '../data/editorialAssets';
+import { CURATED_VISUAL_PLATES, PAGE_SIZE_PRESETS, createUid } from '../data/editorialAssets';
 import {
   ColorSwatch,
   DeviceMockupType,
@@ -291,7 +291,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
     }
   };
 
-  const buildTextCss = (style?: TextStyle, fallbackColor = pageInk): React.CSSProperties => {
+  const buildTextCss = (style?: Partial<TextStyle>, fallbackColor = pageInk): React.CSSProperties => {
     if (!style) {
       return {
         fontFamily: globalSettings.bodyFont || "'Plus Jakarta Sans', sans-serif",
@@ -1830,11 +1830,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         };
         const addStep = () => {
           const num = steps.length + 1 < 10 ? `0${steps.length + 1}` : `${steps.length + 1}`;
+          const newId = typeof createUid === 'function' ? createUid('ps') : `ps-${Date.now()}`;
           onUpdateBlock(block.id, {
             processSteps: [
               ...steps,
               {
-                id: createUid('ps'),
+                id: newId,
                 stepNumber: num,
                 title: 'New Strategy Step',
                 description: 'Describe key methodologies, tools, and execution milestones.',
@@ -1845,6 +1846,15 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         const removeStep = (idx: number) => {
           onUpdateBlock(block.id, { processSteps: steps.filter((_, i) => i !== idx) });
         };
+
+        const processGridColsClass =
+          steps.length <= 2
+            ? 'grid-cols-2 max-w-xl mx-auto'
+            : steps.length === 3
+            ? 'grid-cols-1 sm:grid-cols-3'
+            : steps.length === 4
+            ? 'grid-cols-2 md:grid-cols-4'
+            : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
 
         return (
           <div style={{ borderColor: borderCol }} className="py-3 border-t border-b space-y-3">
@@ -1867,14 +1877,14 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                   false
                 )}
               </span>
-              {!isExportMode && steps.length < 5 && (
+              {!isExportMode && steps.length < 8 && (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     addStep();
                   }}
-                  className="text-[11px] text-stone-500 hover:text-stone-900 flex items-center gap-1 font-medium"
+                  className="text-[11px] text-stone-500 hover:text-stone-900 flex items-center gap-1 font-medium transition-colors"
                 >
                   <Plus className="w-3 h-3" />
                   <span>Add Step</span>
@@ -1882,7 +1892,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className={`grid ${processGridColsClass} gap-3`}>
               {steps.map((step, idx) => (
                 <div
                   key={step.id || idx}
@@ -1896,14 +1906,14 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     >
                       {step.stepNumber}
                     </span>
-                    {!isExportMode && steps.length > 2 && (
+                    {!isExportMode && steps.length > 1 && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           removeStep(idx);
                         }}
-                        className="opacity-0 group-hover/step:opacity-100 text-stone-400 hover:text-red-500"
+                        className="opacity-0 group-hover/step:opacity-100 text-stone-400 hover:text-red-500 transition-opacity"
                         title="Remove Step"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -1977,11 +1987,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         };
         const addOffer = () => {
           const num = offers.length + 1 < 10 ? `0${offers.length + 1}` : `${offers.length + 1}`;
+          const newId = typeof createUid === 'function' ? createUid('so') : `so-${Date.now()}`;
           onUpdateBlock(block.id, {
             serviceOffers: [
               ...offers,
               {
-                id: createUid('so'),
+                id: newId,
                 number: num,
                 title: 'New Service Discipline',
                 description: 'Detailed description of services offered, methodologies, and deliverables.',
@@ -1993,6 +2004,15 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         const removeOffer = (idx: number) => {
           onUpdateBlock(block.id, { serviceOffers: offers.filter((_, i) => i !== idx) });
         };
+
+        const servicesGridColsClass =
+          offers.length === 1
+            ? 'grid-cols-1 max-w-md mx-auto'
+            : offers.length === 2
+            ? 'grid-cols-1 md:grid-cols-2'
+            : offers.length === 4
+            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+            : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
 
         return (
           <div style={{ borderColor: borderCol }} className="py-3 border-t border-b space-y-3">
@@ -2015,14 +2035,14 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                   false
                 )}
               </span>
-              {!isExportMode && offers.length < 4 && (
+              {!isExportMode && offers.length < 8 && (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     addOffer();
                   }}
-                  className="text-[11px] text-stone-500 hover:text-stone-900 flex items-center gap-1 font-medium"
+                  className="text-[11px] text-stone-500 hover:text-stone-900 flex items-center gap-1 font-medium transition-colors"
                 >
                   <Plus className="w-3 h-3" />
                   <span>Add Service</span>
@@ -2030,7 +2050,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className={`grid ${servicesGridColsClass} gap-3`}>
               {offers.map((offer, idx) => (
                 <div
                   key={offer.id || idx}
@@ -2052,7 +2072,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                             e.stopPropagation();
                             removeOffer(idx);
                           }}
-                          className="opacity-0 group-hover/offer:opacity-100 text-stone-400 hover:text-red-500"
+                          className="opacity-0 group-hover/offer:opacity-100 text-stone-400 hover:text-red-500 transition-opacity"
                           title="Remove Service"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -2089,19 +2109,59 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     </div>
                   </div>
 
-                  {offer.tags && offer.tags.length > 0 && (
-                    <div className="pt-2 flex flex-wrap gap-1">
-                      {offer.tags.map((tag, tIdx) => (
-                        <span
-                          key={tIdx}
-                          style={{ fontFamily: globalSettings.monoFont }}
-                          className="text-[9px] bg-white text-stone-700 px-1.5 py-0.5 rounded border border-stone-200"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div className="pt-2 flex flex-wrap items-center gap-1">
+                    {(offer.tags || []).map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        style={{ fontFamily: globalSettings.monoFont }}
+                        className="group/tag inline-flex items-center gap-1 text-[9px] bg-white text-stone-700 px-1.5 py-0.5 rounded border border-stone-200"
+                      >
+                        {renderEditableText(
+                          tag,
+                          (newTag) => {
+                            const updatedTags = [...(offer.tags || [])];
+                            updatedTags[tIdx] = newTag;
+                            updateOffer(idx, { tags: updatedTags });
+                          },
+                          {
+                            fontSize: '9px',
+                            fontFamily: globalSettings.monoFont,
+                            color: '#44403c',
+                          },
+                          'Tag',
+                          false
+                        )}
+                        {!isExportMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const updatedTags = (offer.tags || []).filter((_, i) => i !== tIdx);
+                              updateOffer(idx, { tags: updatedTags });
+                            }}
+                            className="opacity-0 group-hover/tag:opacity-100 text-stone-400 hover:text-red-500 ml-0.5"
+                            title="Delete Tag"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                    {!isExportMode && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const updatedTags = [...(offer.tags || []), 'New Discipline'];
+                          updateOffer(idx, { tags: updatedTags });
+                        }}
+                        className="text-[9px] text-stone-400 hover:text-stone-700 border border-dashed border-stone-300 hover:border-stone-400 rounded px-1.5 py-0.5"
+                        title="Add Tag"
+                      >
+                        + Tag
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

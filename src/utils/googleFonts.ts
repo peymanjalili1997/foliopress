@@ -461,14 +461,14 @@ export function searchGoogleFonts(
     if (curated) return curated;
 
     const cat = inferFontCategory(item.name);
-    const catLabel =
+    const catLabel: FontOption['category'] =
       cat === 'Serif'
         ? 'Editorial Serif'
         : cat === 'Sans'
         ? 'Architectural Sans'
         : cat === 'Mono'
         ? 'Technical Mono'
-        : 'Display Typeface';
+        : 'Display & Avant-Garde';
 
     const fallback =
       cat === 'Serif' ? 'Georgia, serif' : cat === 'Mono' ? 'monospace' : 'sans-serif';
@@ -476,7 +476,7 @@ export function searchGoogleFonts(
     return {
       name: item.name,
       family: `'${item.name}', ${fallback}`,
-      category: `${catLabel} · Google Font`,
+      category: catLabel,
       sample: 'Architectural portfolio & design monograph',
     };
   });

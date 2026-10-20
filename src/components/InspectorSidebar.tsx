@@ -32,14 +32,18 @@ import {
   GLOBAL_THEMES,
   PAGE_SIZE_PRESETS,
   PAGE_TEMPLATES,
+  createUid,
 } from '../data/editorialAssets';
 import {
   GlobalDocumentSettings,
   ImageFilterType,
   ImageStyle,
+  PageSizeId,
   PageTemplateId,
   PortfolioBlock,
   PortfolioPage,
+  ProcessStepItem,
+  ServiceOfferItem,
   TextStyle,
   TextTargetField,
 } from '../types/portfolio';
@@ -640,6 +644,250 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                         />
                         <span>NDA / Confidentiality Protected Badge</span>
                       </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Services Grid Inspector */}
+                {selectedBlock.type === 'services-grid' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Services & Capabilities</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentOffers: ServiceOfferItem[] = selectedBlock.serviceOffers || [];
+                          if (currentOffers.length >= 8) return;
+                          const nextNum =
+                            currentOffers.length + 1 < 10
+                              ? `0${currentOffers.length + 1}`
+                              : `${currentOffers.length + 1}`;
+                          onUpdateBlock(selectedBlock.id, {
+                            serviceOffers: [
+                              ...currentOffers,
+                              {
+                                id: typeof createUid === 'function' ? createUid('so') : `so-${Date.now()}`,
+                                number: nextNum,
+                                title: 'New Service Discipline',
+                                description: 'Detailed scope of services and deliverables.',
+                                tags: ['Consultation', 'Execution'],
+                              },
+                            ],
+                          });
+                        }}
+                        className="text-[11px] font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Service</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Section Header / Kicker</label>
+                      <input
+                        type="text"
+                        value={selectedBlock.kicker || ''}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { kicker: e.target.value })}
+                        placeholder="e.g. PART 02 · CORE SERVICES & SCOPE OF ENGAGEMENT"
+                        className="w-full h-8 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-900 font-mono text-[10px]"
+                      />
+                    </div>
+
+                    <div className="space-y-2.5 pt-1">
+                      {(selectedBlock.serviceOffers || []).map((offer, oIdx) => (
+                        <div
+                          key={offer.id || oIdx}
+                          className="p-2.5 bg-stone-50 border border-stone-200 rounded-lg space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <input
+                              type="text"
+                              value={offer.number}
+                              onChange={(e) => {
+                                const next = [...(selectedBlock.serviceOffers || [])];
+                                next[oIdx] = { ...offer, number: e.target.value };
+                                onUpdateBlock(selectedBlock.id, { serviceOffers: next });
+                              }}
+                              className="w-12 h-6 px-1.5 text-xs font-mono font-bold bg-white border border-stone-200 rounded text-amber-700"
+                            />
+                            {(selectedBlock.serviceOffers || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = (selectedBlock.serviceOffers || []).filter((_, i) => i !== oIdx);
+                                  onUpdateBlock(selectedBlock.id, { serviceOffers: next });
+                                }}
+                                className="text-stone-400 hover:text-red-500 p-1"
+                                title="Remove Service"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-stone-500 mb-0.5">Service Title</label>
+                            <input
+                              type="text"
+                              value={offer.title}
+                              onChange={(e) => {
+                                const next = [...(selectedBlock.serviceOffers || [])];
+                                next[oIdx] = { ...offer, title: e.target.value };
+                                onUpdateBlock(selectedBlock.id, { serviceOffers: next });
+                              }}
+                              className="w-full h-7 px-2 text-xs bg-white border border-stone-200 rounded text-stone-900 font-medium"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-stone-500 mb-0.5">Description</label>
+                            <textarea
+                              rows={2}
+                              value={offer.description}
+                              onChange={(e) => {
+                                const next = [...(selectedBlock.serviceOffers || [])];
+                                next[oIdx] = { ...offer, description: e.target.value };
+                                onUpdateBlock(selectedBlock.id, { serviceOffers: next });
+                              }}
+                              className="w-full p-1.5 text-xs bg-white border border-stone-200 rounded text-stone-800 resize-none leading-snug"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-stone-500 mb-0.5">Tags (Comma-separated)</label>
+                            <input
+                              type="text"
+                              value={(offer.tags || []).join(', ')}
+                              onChange={(e) => {
+                                const rawTags = e.target.value
+                                  .split(',')
+                                  .map((t) => t.trim())
+                                  .filter(Boolean);
+                                const next = [...(selectedBlock.serviceOffers || [])];
+                                next[oIdx] = { ...offer, tags: rawTags };
+                                onUpdateBlock(selectedBlock.id, { serviceOffers: next });
+                              }}
+                              placeholder="e.g. Masterplanning, Concept, BIM"
+                              className="w-full h-7 px-2 text-xs bg-white border border-stone-200 rounded text-stone-700 font-mono text-[10px]"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Process Steps Inspector */}
+                {selectedBlock.type === 'process-steps' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <ListOrdered className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Process & Methodology Steps</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentSteps: ProcessStepItem[] = selectedBlock.processSteps || [];
+                          if (currentSteps.length >= 8) return;
+                          const nextNum =
+                            currentSteps.length + 1 < 10
+                              ? `0${currentSteps.length + 1}`
+                              : `${currentSteps.length + 1}`;
+                          onUpdateBlock(selectedBlock.id, {
+                            processSteps: [
+                              ...currentSteps,
+                              {
+                                id: typeof createUid === 'function' ? createUid('ps') : `ps-${Date.now()}`,
+                                stepNumber: nextNum,
+                                title: 'New Methodology Phase',
+                                description: 'Detail execution steps, deliverables, and milestones.',
+                              },
+                            ],
+                          });
+                        }}
+                        className="text-[11px] font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Step</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Process Header / Kicker</label>
+                      <input
+                        type="text"
+                        value={selectedBlock.kicker || ''}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { kicker: e.target.value })}
+                        placeholder="e.g. 04 · STRATEGY, PROCESS & METHODOLOGY"
+                        className="w-full h-8 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-900 font-mono text-[10px]"
+                      />
+                    </div>
+
+                    <div className="space-y-2.5 pt-1">
+                      {(selectedBlock.processSteps || []).map((step, sIdx) => (
+                        <div
+                          key={step.id || sIdx}
+                          className="p-2.5 bg-stone-50 border border-stone-200 rounded-lg space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <input
+                              type="text"
+                              value={step.stepNumber}
+                              onChange={(e) => {
+                                const next = [...(selectedBlock.processSteps || [])];
+                                next[sIdx] = { ...step, stepNumber: e.target.value };
+                                onUpdateBlock(selectedBlock.id, { processSteps: next });
+                              }}
+                              className="w-12 h-6 px-1.5 text-xs font-mono font-bold bg-white border border-stone-200 rounded text-amber-700"
+                            />
+                            {(selectedBlock.processSteps || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = (selectedBlock.processSteps || []).filter((_, i) => i !== sIdx);
+                                  onUpdateBlock(selectedBlock.id, { processSteps: next });
+                                }}
+                                className="text-stone-400 hover:text-red-500 p-1"
+                                title="Remove Step"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-stone-500 mb-0.5">Step Title</label>
+                            <input
+                              type="text"
+                              value={step.title}
+                              onChange={(e) => {
+                                const next = [...(selectedBlock.processSteps || [])];
+                                next[sIdx] = { ...step, title: e.target.value };
+                                onUpdateBlock(selectedBlock.id, { processSteps: next });
+                              }}
+                              className="w-full h-7 px-2 text-xs bg-white border border-stone-200 rounded text-stone-900 font-medium"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-stone-500 mb-0.5">Description</label>
+                            <textarea
+                              rows={2}
+                              value={step.description}
+                              onChange={(e) => {
+                                const next = [...(selectedBlock.processSteps || [])];
+                                next[sIdx] = { ...step, description: e.target.value };
+                                onUpdateBlock(selectedBlock.id, { processSteps: next });
+                              }}
+                              className="w-full p-1.5 text-xs bg-white border border-stone-200 rounded text-stone-800 resize-none leading-snug"
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

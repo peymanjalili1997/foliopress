@@ -280,29 +280,36 @@ export default function App() {
     }
 
     if (target === 'kicker') {
-      const currentKicker = selectedBlock.kickerTextStyle || {
+      const currentKicker: TextStyle = selectedBlock.kickerTextStyle || {
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 11,
         fontWeight: 500,
+        fontStyle: 'normal',
+        textDecoration: 'none',
+        textAlign: 'left',
+        lineHeight: 1.4,
         color: '#78716c',
         letterSpacing: 2,
         textTransform: 'uppercase',
       };
       handleUpdateBlock(selectedBlock.id, {
-        kickerTextStyle: { ...currentKicker, ...patch },
+        kickerTextStyle: { ...currentKicker, ...patch } as TextStyle,
       });
     } else if (target === 'secondary') {
-      const currentSec = selectedBlock.secondaryTextStyle || {
+      const currentSec: TextStyle = selectedBlock.secondaryTextStyle || {
         fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
         fontSize: 14,
         fontWeight: 400,
+        fontStyle: 'normal',
+        textDecoration: 'none',
+        textAlign: 'left',
         lineHeight: 1.5,
         color: '#57534e',
         letterSpacing: 0,
         textTransform: 'none',
       };
       handleUpdateBlock(selectedBlock.id, {
-        secondaryTextStyle: { ...currentSec, ...patch },
+        secondaryTextStyle: { ...currentSec, ...patch } as TextStyle,
       });
     } else {
       // Primary headline layer or whole block
@@ -310,14 +317,12 @@ export default function App() {
       if (patch.textAlign && selectedBlock.type === 'heading') {
         handleUpdateBlock(selectedBlock.id, {
           textStyle: { ...selectedBlock.textStyle, ...patch },
-          secondaryTextStyle: {
-            ...(selectedBlock.secondaryTextStyle || {}),
-            textAlign: patch.textAlign,
-          },
-          kickerTextStyle: {
-            ...(selectedBlock.kickerTextStyle || {}),
-            textAlign: patch.textAlign,
-          },
+          secondaryTextStyle: selectedBlock.secondaryTextStyle
+            ? { ...selectedBlock.secondaryTextStyle, textAlign: patch.textAlign }
+            : undefined,
+          kickerTextStyle: selectedBlock.kickerTextStyle
+            ? { ...selectedBlock.kickerTextStyle, textAlign: patch.textAlign }
+            : undefined,
         });
       } else {
         handleUpdateBlock(selectedBlock.id, {
@@ -1041,6 +1046,17 @@ export default function App() {
       const newBlock: PortfolioBlock = {
         id: createUid('blk'),
         type: 'multi-photo-grid',
+        textStyle: {
+          fontFamily: globalSettings.bodyFont || "'Plus Jakarta Sans', sans-serif",
+          fontSize: 12,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          textDecoration: 'none',
+          textAlign: 'left',
+          lineHeight: 1.4,
+          letterSpacing: 0,
+          textTransform: 'none',
+        },
         gridColumns: cols,
         gridGapPx: 16,
         gridAspectRatio: '4/3',
@@ -1178,7 +1194,7 @@ export default function App() {
       id: `cmd-theme-${theme.id}`,
       category: 'Archival Themes' as const,
       title: `Apply Theme: ${theme.name}`,
-      subtitle: `${theme.primaryInk} on ${theme.paperBackground} (${theme.headingFont})`,
+      subtitle: `${theme.textColor} on ${theme.backgroundColor} (${theme.name})`,
       icon: FolderOpen,
       action: () => handleApplyGlobalTheme(theme.id),
     })),
@@ -1186,7 +1202,7 @@ export default function App() {
       id: `cmd-font-pairing-${pairing.id}`,
       category: 'Typography' as const,
       title: `Font Pairing: ${pairing.name}`,
-      subtitle: `${pairing.headingFont} + ${pairing.bodyFont} (${pairing.style})`,
+      subtitle: `${pairing.headingFont} + ${pairing.bodyFont} (${pairing.description})`,
       icon: Type,
       action: () => {
         handleApplyGlobalFontsToAllPages(pairing.headingFont, pairing.bodyFont, pairing.monoFont);
