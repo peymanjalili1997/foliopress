@@ -281,7 +281,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           placeholder={placeholder}
           onFocus={onFocus}
           onChange={(e) => onChange(e.target.value)}
-          style={style}
+          style={{ ...style, width: '100%', textAlign: style.textAlign || 'inherit' }}
           className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 p-0 m-0"
         />
       );
@@ -292,8 +292,8 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         {/* Mirror div determines exact natural height so textarea never clips or scrolls */}
         <div
           aria-hidden="true"
-          style={style}
-          className="whitespace-pre-wrap break-words invisible pointer-events-none min-h-[1.4em]"
+          style={{ ...style, width: '100%', textAlign: style.textAlign || 'inherit' }}
+          className="whitespace-pre-wrap break-words invisible pointer-events-none min-h-[1.4em] w-full"
         >
           {value ? `${value}\n` : placeholder}
         </div>
@@ -303,7 +303,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           placeholder={placeholder}
           onFocus={onFocus}
           onChange={(e) => onChange(e.target.value)}
-          style={style}
+          style={{ ...style, width: '100%', textAlign: style.textAlign || 'inherit' }}
           className="absolute inset-0 w-full h-full resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 p-0 m-0"
         />
       </div>
@@ -423,20 +423,30 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
       case 'heading': {
         const isBlockSelected = !isExportMode && selectedBlockId === block.id;
 
+        const blockAlign = block.textStyle?.textAlign || 'left';
+        const subtitleAlign = block.secondaryTextStyle?.textAlign || blockAlign;
+        const kickerAlign = block.kickerTextStyle?.textAlign || blockAlign;
+
         const kickerStyle = buildTextCss(
           {
-            textAlign: block.textStyle?.textAlign || 'left',
             ...block.kickerTextStyle,
+            textAlign: kickerAlign,
           },
           accentCol
         );
 
-        const headlineStyle = buildTextCss(block.textStyle, pageInk);
+        const headlineStyle = buildTextCss(
+          {
+            ...block.textStyle,
+            textAlign: blockAlign,
+          },
+          pageInk
+        );
 
         const subtitleStyle = buildTextCss(
           {
-            textAlign: block.textStyle?.textAlign || 'left',
             ...block.secondaryTextStyle,
+            textAlign: subtitleAlign,
           },
           mutedInk
         );
@@ -454,6 +464,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     }
                   }}
                   className={`w-full transition-all rounded-xs ${
+                    kickerAlign === 'center'
+                      ? 'text-center'
+                      : kickerAlign === 'right'
+                      ? 'text-right'
+                      : 'text-left'
+                  } ${
                     isBlockSelected && activeTextTarget === 'kicker'
                       ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
                       : ''
@@ -482,6 +498,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                 }
               }}
               className={`w-full transition-all rounded-xs ${
+                blockAlign === 'center'
+                  ? 'text-center'
+                  : blockAlign === 'right'
+                  ? 'text-right'
+                  : 'text-left'
+              } ${
                 isBlockSelected && activeTextTarget === 'primary'
                   ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
                   : ''
@@ -511,6 +533,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     }
                   }}
                   className={`pt-0.5 w-full transition-all rounded-xs ${
+                    subtitleAlign === 'center'
+                      ? 'text-center'
+                      : subtitleAlign === 'right'
+                      ? 'text-right'
+                      : 'text-left'
+                  } ${
                     isBlockSelected && activeTextTarget === 'secondary'
                       ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
                       : ''

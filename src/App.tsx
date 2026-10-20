@@ -282,9 +282,25 @@ export default function App() {
         secondaryTextStyle: { ...currentSec, ...patch },
       });
     } else {
-      handleUpdateBlock(selectedBlock.id, {
-        textStyle: { ...selectedBlock.textStyle, ...patch },
-      });
+      // Primary headline layer or whole block
+      // If patch contains textAlign on a heading, unify all text layers (headline, subtitle, kicker)
+      if (patch.textAlign && selectedBlock.type === 'heading') {
+        handleUpdateBlock(selectedBlock.id, {
+          textStyle: { ...selectedBlock.textStyle, ...patch },
+          secondaryTextStyle: {
+            ...(selectedBlock.secondaryTextStyle || {}),
+            textAlign: patch.textAlign,
+          },
+          kickerTextStyle: {
+            ...(selectedBlock.kickerTextStyle || {}),
+            textAlign: patch.textAlign,
+          },
+        });
+      } else {
+        handleUpdateBlock(selectedBlock.id, {
+          textStyle: { ...selectedBlock.textStyle, ...patch },
+        });
+      }
     }
   };
 
