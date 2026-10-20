@@ -88,6 +88,10 @@ interface PageCanvasProps {
   onInsertDroppedImages?: (imageUrls: string[]) => void;
   isExportMode?: boolean;
   scale?: number;
+  showBleedGuides?: boolean;
+  showColumnGrid?: boolean;
+  allPages?: PortfolioPage[];
+  onNavigatePage?: (pageId: string) => void;
 }
 
 function getFilterCss(filter?: ImageFilterType): string {
@@ -139,6 +143,10 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
   onInsertDroppedImages,
   isExportMode = false,
   scale = 1,
+  showBleedGuides = false,
+  showColumnGrid = false,
+  allPages,
+  onNavigatePage,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isCanvasDragOver, setIsCanvasDragOver] = useState(false);
@@ -395,7 +403,14 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => handleDropFile(e, block.id, isSecondary ? 'secondaryImageUrl' : 'imageUrl')}
           style={{
-            height: `${imgStyle.height}px`,
+            height:
+              imgStyle.aspectRatio && imgStyle.aspectRatio !== 'auto'
+                ? undefined
+                : `${imgStyle.height}px`,
+            aspectRatio:
+              imgStyle.aspectRatio && imgStyle.aspectRatio !== 'auto'
+                ? imgStyle.aspectRatio.replace('/', ' / ')
+                : undefined,
             borderRadius: `${imgStyle.borderRadius}px`,
             border: imgStyle.showBorder ? `1px solid ${borderCol}` : 'none',
           }}
@@ -408,6 +423,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
               referrerPolicy="no-referrer"
               style={{
                 objectFit: imgStyle.objectFit,
+                objectPosition: imgStyle.focalPoint || 'center',
                 transform: imgStyle.zoom !== 1 ? `scale(${imgStyle.zoom})` : undefined,
                 filter: getFilterCss(imgStyle.filter),
               }}
@@ -2168,6 +2184,415 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           </div>
         );
       }
+
+      case 'arch-scale-compass': {
+        const ratio = block.scaleRatio || '1:100';
+        const unit = block.scaleUnit || 'metric';
+        const lengthM = block.scaleLengthMeters || 10;
+        const angle = block.northAngleDeg ?? 0;
+        const showNorth = block.showNorthArrow !== false;
+        const showScale = block.showScaleBar !== false;
+        const compassStyle = block.compassStyle || 'minimal-needle';
+        const kicker = block.kicker || 'ARCHITECTURAL DRAWING SPECIFICATIONS';
+
+        return (
+          <div
+            style={{ borderColor: borderCol }}
+            className="py-4 border-t border-b flex flex-wrap items-center justify-between gap-6"
+          >
+            {/* Left: Graphic Scale Bar */}
+            {showScale && (
+              <div className="flex flex-col gap-2 min-w-[240px]">
+                <div className="flex items-center justify-between text-[10px] tracking-wider uppercase font-semibold">
+                  <span style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}>
+                    {renderEditableText(
+                      kicker,
+                      (val) => onUpdateBlock(block.id, { kicker: val }),
+                      {
+                        fontSize: '10px',
+                        fontFamily: globalSettings.monoFont,
+                        color: mutedInk,
+                        letterSpacing: '0.08em',
+                        fontWeight: 600,
+                      },
+                      'SCALE SPECIFICATIONS',
+                      false
+                    )}
+                  </span>
+                  <span
+                    style={{ fontFamily: globalSettings.monoFont }}
+                    className="font-bold text-stone-900"
+                  >
+                    SCALE {ratio}
+                  </span>
+                </div>
+
+                {/* The Graphic Bar with Subdivisions */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-end h-3 w-64 border-t border-b border-stone-900 relative">
+                    <div className="w-1/4 h-full bg-stone-900" />
+                    <div className="w-1/4 h-full bg-stone-200" />
+                    <div className="w-1/4 h-full bg-stone-900" />
+                    <div className="w-1/4 h-full bg-stone-200" />
+                  </div>
+                  {/* Metric ticks numbers */}
+                  <div
+                    style={{ fontFamily: globalSettings.monoFont }}
+                    className="w-64 flex justify-between text-[9px] font-semibold text-stone-700 tabular-nums px-0.5"
+                  >
+                    <span>0</span>
+                    <span>
+                      {Math.round(lengthM * 0.25)}
+                      {unit === 'metric' ? 'm' : 'ft'}
+                    </span>
+                    <span>
+                      {Math.round(lengthM * 0.5)}
+                      {unit === 'metric' ? 'm' : 'ft'}
+                    </span>
+                    <span>
+                      {Math.round(lengthM * 0.75)}
+                      {unit === 'metric' ? 'm' : 'ft'}
+                    </span>
+                    <span>
+                      {lengthM}
+                      {unit === 'metric' ? 'm' : 'ft'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Right: Architectural North Compass */}
+            {showNorth && (
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="flex flex-col items-center">
+                  <div
+                    style={{
+                      transform: `rotate(${angle}deg)`,
+                      transition: 'transform 0.2s ease-out',
+                    }}
+                    className="w-12 h-12 flex items-center justify-center relative"
+                  >
+                    {compassStyle === 'circle-arrow' ? (
+                      <svg viewBox="0 0 48 48" className="w-10 h-10 stroke-stone-900 fill-none">
+                        <circle cx="24" cy="24" r="20" strokeWidth="1.5" />
+                        <line x1="24" y1="4" x2="24" y2="44" strokeWidth="1.5" />
+                        <polygon points="24,4 19,16 29,16" className="fill-stone-900 stroke-none" />
+                      </svg>
+                    ) : compassStyle === 'architectural-cross' ? (
+                      <svg viewBox="0 0 48 48" className="w-10 h-10 stroke-stone-900 fill-none">
+                        <line x1="24" y1="2" x2="24" y2="46" strokeWidth="1.5" />
+                        <line x1="2" y1="24" x2="46" y2="24" strokeWidth="1.5" strokeDasharray="2 2" />
+                        <polygon points="24,2 20,12 28,12" className="fill-stone-900 stroke-none" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 48 48" className="w-10 h-10">
+                        <polygon points="24,4 20,24 24,22" className="fill-stone-900" />
+                        <polygon points="24,4 28,24 24,22" className="fill-stone-400" />
+                        <polygon points="24,44 20,24 24,26" className="fill-stone-400" />
+                        <polygon points="24,44 28,24 24,26" className="fill-stone-200" />
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="2.5"
+                          className="fill-white stroke-stone-900"
+                          strokeWidth="1"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <span
+                    style={{ fontFamily: globalSettings.monoFont }}
+                    className="text-[10px] font-bold text-stone-900 tracking-wider -mt-0.5"
+                  >
+                    N
+                  </span>
+                </div>
+                {!isExportMode && (
+                  <div className="flex flex-col text-[10px] text-stone-500">
+                    <span style={{ fontFamily: globalSettings.monoFont }}>{angle}°</span>
+                    <span className="text-[9px] text-stone-400">Angle</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case 'project-factsheet': {
+        const kicker = block.kicker || 'PROJECT ARCHIVE & TECHNICAL SPECIFICATION';
+        const title = block.factsheetTitle || 'Architectural Monograph Factsheet';
+        const layout = block.factsheetLayout || 'grid-3col';
+        const items = block.factsheetItems || [
+          { id: 'fi-1', label: 'PROJECT NAME', value: 'Pavilion of Light & Stone' },
+          { id: 'fi-2', label: 'PROGRAM / TYPOLOGY', value: 'Cultural Gallery & Archive' },
+          { id: 'fi-3', label: 'LOCATION', value: 'Engadin Valley, Switzerland' },
+          { id: 'fi-4', label: 'YEAR / STATUS', value: '2025 – 2026 (Completed)' },
+          { id: 'fi-5', label: 'GROSS BUILT AREA', value: '3,850 m² (41,400 sq ft)' },
+          { id: 'fi-6', label: 'CLIENT / PATRON', value: 'Cantonal Cultural Trust' },
+          { id: 'fi-7', label: 'LEAD ARCHITECT', value: 'Julian Sterling Studio' },
+          { id: 'fi-8', label: 'STRUCTURAL CONSULTANT', value: 'Buro Weber & Partner' },
+          { id: 'fi-9', label: 'PHOTOGRAPHY CREDITS', value: 'Hélène Binet Studio' },
+        ];
+
+        const gridColsClass =
+          layout === 'compact-strip'
+            ? 'grid-cols-2 sm:grid-cols-4'
+            : layout === 'grid-2col'
+            ? 'grid-cols-1 sm:grid-cols-2'
+            : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
+
+        return (
+          <div style={{ borderColor: borderCol }} className="py-4 border-t border-b space-y-4">
+            <div className="space-y-1">
+              <span
+                style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                className="text-[10px] tracking-wider uppercase font-semibold block"
+              >
+                {renderEditableText(
+                  kicker,
+                  (val) => onUpdateBlock(block.id, { kicker: val }),
+                  {
+                    fontSize: '10px',
+                    fontFamily: globalSettings.monoFont,
+                    color: mutedInk,
+                    letterSpacing: '0.08em',
+                    fontWeight: 600,
+                  },
+                  'FACTSHEET KICKER',
+                  false
+                )}
+              </span>
+              <h3
+                style={{
+                  fontFamily: block.textStyle?.fontFamily || globalSettings.headingFont,
+                  fontSize: `${block.textStyle?.fontSize || 20}px`,
+                  color: pageInk,
+                }}
+                className="font-semibold tracking-tight"
+              >
+                {renderEditableText(
+                  title,
+                  (val) => onUpdateBlock(block.id, { factsheetTitle: val }),
+                  {
+                    fontSize: `${block.textStyle?.fontSize || 20}px`,
+                    fontFamily: block.textStyle?.fontFamily || globalSettings.headingFont,
+                    color: pageInk,
+                    fontWeight: 600,
+                  },
+                  'Factsheet Title',
+                  false
+                )}
+              </h3>
+            </div>
+
+            <div className={`grid ${gridColsClass} gap-3`}>
+              {items.map((item, idx) => (
+                <div
+                  key={item.id || idx}
+                  style={{ borderColor: borderCol }}
+                  className="p-3 bg-stone-100/60 border rounded-lg space-y-1 relative group/item"
+                >
+                  <span
+                    style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                    className="text-[9px] uppercase tracking-wider font-semibold block truncate"
+                  >
+                    {renderEditableText(
+                      item.label,
+                      (val) => {
+                        const nextItems = [...items];
+                        nextItems[idx] = { ...nextItems[idx], label: val };
+                        onUpdateBlock(block.id, { factsheetItems: nextItems });
+                      },
+                      {
+                        fontSize: '9px',
+                        fontFamily: globalSettings.monoFont,
+                        color: mutedInk,
+                        letterSpacing: '0.06em',
+                        fontWeight: 600,
+                      },
+                      'LABEL',
+                      false
+                    )}
+                  </span>
+                  <div
+                    style={{
+                      fontFamily: globalSettings.bodyFont,
+                      color: pageInk,
+                    }}
+                    className="text-xs font-medium"
+                  >
+                    {renderEditableText(
+                      item.value,
+                      (val) => {
+                        const nextItems = [...items];
+                        nextItems[idx] = { ...nextItems[idx], value: val };
+                        onUpdateBlock(block.id, { factsheetItems: nextItems });
+                      },
+                      {
+                        fontSize: '12px',
+                        fontFamily: globalSettings.bodyFont,
+                        color: pageInk,
+                        fontWeight: 500,
+                      },
+                      'Value...',
+                      true
+                    )}
+                  </div>
+                  {!isExportMode && items.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const nextItems = items.filter((_, i) => i !== idx);
+                        onUpdateBlock(block.id, { factsheetItems: nextItems });
+                      }}
+                      className="absolute top-1.5 right-1.5 opacity-0 group-hover/item:opacity-100 text-stone-400 hover:text-red-500 text-xs p-1"
+                      title="Remove Factsheet Item"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {!isExportMode && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const nextItems = [
+                    ...items,
+                    {
+                      id: createUid('fi'),
+                      label: 'NEW SPECIFICATION',
+                      value: 'Value or description here',
+                    },
+                  ];
+                  onUpdateBlock(block.id, { factsheetItems: nextItems });
+                }}
+                className="text-xs text-stone-600 hover:text-stone-950 font-medium flex items-center gap-1.5 pt-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Factsheet Row</span>
+              </button>
+            )}
+          </div>
+        );
+      }
+
+      case 'table-of-contents': {
+        const kicker = block.kicker || 'PORTFOLIO DIRECTORY';
+        const title = block.text || 'Table of Contents';
+        const style = block.tocStyle || 'editorial-dots';
+        const showBadges = block.tocIncludeSectionBadges !== false;
+        const catalogPages = allPages && allPages.length > 0 ? allPages : [page];
+
+        return (
+          <div style={{ borderColor: borderCol }} className="py-4 border-t border-b space-y-5">
+            <div className="space-y-1">
+              <span
+                style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                className="text-[10px] tracking-wider uppercase font-semibold block"
+              >
+                {renderEditableText(
+                  kicker,
+                  (val) => onUpdateBlock(block.id, { kicker: val }),
+                  {
+                    fontSize: '10px',
+                    fontFamily: globalSettings.monoFont,
+                    color: mutedInk,
+                    letterSpacing: '0.08em',
+                    fontWeight: 600,
+                  },
+                  'DIRECTORY KICKER',
+                  false
+                )}
+              </span>
+              <h2
+                style={{
+                  fontFamily: block.textStyle?.fontFamily || globalSettings.headingFont,
+                  fontSize: `${block.textStyle?.fontSize || 28}px`,
+                  color: pageInk,
+                }}
+                className="font-semibold tracking-tight"
+              >
+                {renderEditableText(
+                  title,
+                  (val) => onUpdateBlock(block.id, { text: val }),
+                  {
+                    fontSize: `${block.textStyle?.fontSize || 28}px`,
+                    fontFamily: block.textStyle?.fontFamily || globalSettings.headingFont,
+                    color: pageInk,
+                    fontWeight: 600,
+                  },
+                  'Table of Contents',
+                  false
+                )}
+              </h2>
+            </div>
+
+            {/* List of Pages */}
+            <div className="space-y-2.5">
+              {catalogPages.map((p, idx) => {
+                const numStr = idx + 1 < 10 ? `0${idx + 1}` : `${idx + 1}`;
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      if (!isExportMode && onNavigatePage) {
+                        onNavigatePage(p.id);
+                      }
+                    }}
+                    className={`flex items-baseline justify-between gap-4 py-1 group ${
+                      !isExportMode ? 'cursor-pointer hover:text-amber-800' : ''
+                    }`}
+                  >
+                    {/* Index Number & Title */}
+                    <div className="flex items-baseline gap-3 min-w-0">
+                      <span
+                        style={{ fontFamily: globalSettings.monoFont }}
+                        className="text-xs font-mono font-bold text-stone-400 group-hover:text-amber-600 shrink-0 tabular-nums"
+                      >
+                        {numStr}
+                      </span>
+                      <span
+                        style={{ fontFamily: globalSettings.bodyFont }}
+                        className="text-sm font-semibold text-stone-900 group-hover:text-stone-950 truncate"
+                      >
+                        {p.title}
+                      </span>
+                      {showBadges && p.sectionLabel && (
+                        <span
+                          style={{ fontFamily: globalSettings.monoFont }}
+                          className="text-[9px] uppercase tracking-wider text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200 shrink-0 hidden sm:inline"
+                        >
+                          {p.sectionLabel}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Dotted Leader Line */}
+                    {style === 'editorial-dots' && (
+                      <div className="flex-1 border-b border-dotted border-stone-300 min-w-[20px] mb-1" />
+                    )}
+
+                    {/* Page Number */}
+                    <span
+                      style={{ fontFamily: globalSettings.monoFont }}
+                      className="text-xs font-mono font-semibold text-stone-500 tabular-nums shrink-0"
+                    >
+                      p. {idx + 1}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
     }
   };
 
@@ -2219,6 +2644,34 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
             : 'shadow-[0_12px_40px_rgba(0,0,0,0.09)] ring-1 ring-stone-900/10'
         }`}
       >
+        {/* Bleed Margin & Print Registration Trim Marks (3mm = ~11px) */}
+        {showBleedGuides && !isExportMode && (
+          <div className="absolute inset-0 pointer-events-none z-40 select-none">
+            {/* 3mm Dashed Bleed Boundary */}
+            <div className="absolute inset-[11px] border border-dashed border-rose-500/60 rounded-xs" />
+            <div className="absolute top-1.5 left-4 text-[9px] font-mono font-semibold text-rose-500/90 uppercase tracking-widest bg-white/90 px-1.5 py-0.5 rounded shadow-2xs">
+              3mm Bleed Safety Line
+            </div>
+            {/* 4 Corner Crop Registration Marks */}
+            <div className="absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 border-stone-900" />
+            <div className="absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 border-stone-900" />
+            <div className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 border-stone-900" />
+            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 border-stone-900" />
+          </div>
+        )}
+
+        {/* 12-Column Swiss Modular Grid Overlay */}
+        {showColumnGrid && !isExportMode && (
+          <div className="absolute inset-0 pointer-events-none z-40 select-none grid grid-cols-12 gap-3 px-8 py-8 opacity-15">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-full bg-rose-500 rounded-2xs border-x border-rose-600/30"
+              />
+            ))}
+          </div>
+        )}
+
         {/* Drag & Drop Visual Overlay */}
         {isCanvasDragOver && !isExportMode && (
           <div className="absolute inset-0 z-50 bg-stone-900/20 backdrop-blur-xs border-4 border-dashed border-stone-800 m-3 rounded-2xl flex flex-col items-center justify-center pointer-events-none transition-all">

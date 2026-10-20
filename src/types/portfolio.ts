@@ -48,6 +48,8 @@ export interface ImageStyle {
   filter: ImageFilterType;
   borderRadius: number; // px
   showBorder: boolean;
+  aspectRatio?: 'auto' | '1/1' | '4/3' | '16/9' | '3/2' | '21/9';
+  focalPoint?: 'center' | 'top' | 'bottom' | 'left' | 'right';
 }
 
 export type BlockType =
@@ -68,7 +70,23 @@ export type BlockType =
   | 'multi-photo-grid'
   | 'client-testimonial'
   | 'process-steps'
-  | 'services-grid';
+  | 'services-grid'
+  | 'arch-scale-compass'
+  | 'project-factsheet'
+  | 'table-of-contents';
+
+export interface FactsheetItem {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface SavedCustomBlock {
+  id: string;
+  name: string;
+  createdAt: number;
+  block: PortfolioBlock;
+}
 
 export interface SpecItem {
   id: string;
@@ -167,6 +185,21 @@ export interface PortfolioBlock {
   processSteps?: ProcessStepItem[];
   // Service Offerings Grid
   serviceOffers?: ServiceOfferItem[];
+  // Architectural Scale Bar & North Arrow
+  scaleRatio?: string;
+  scaleUnit?: 'metric' | 'imperial';
+  scaleLengthMeters?: number;
+  northAngleDeg?: number;
+  showNorthArrow?: boolean;
+  showScaleBar?: boolean;
+  compassStyle?: 'minimal-needle' | 'circle-arrow' | 'architectural-cross';
+  // Architectural Project Factsheet
+  factsheetTitle?: string;
+  factsheetItems?: FactsheetItem[];
+  factsheetLayout?: 'compact-strip' | 'grid-2col' | 'grid-3col';
+  // Table of Contents
+  tocStyle?: 'minimal-list' | 'numbered-grid' | 'editorial-dots';
+  tocIncludeSectionBadges?: boolean;
 }
 
 export type PageTemplateId =
@@ -183,7 +216,8 @@ export type PageTemplateId =
   | 'cover-landscape'
   | 'before-after-spread'
   | 'case-study-6step'
-  | 'story-services-intro';
+  | 'story-services-intro'
+  | 'table-of-contents';
 
 export interface PortfolioPage {
   id: string;

@@ -2,10 +2,11 @@ import React, { useRef, useState } from 'react';
 import { toJpeg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { zipSync } from 'fflate';
-import { Archive, CheckCircle2, Download, FileText, Loader2, Printer, X } from 'lucide-react';
+import { Archive, CheckCircle2, Download, FileText, Globe, Loader2, Printer, X } from 'lucide-react';
 import { PAGE_SIZE_PRESETS } from '../data/editorialAssets';
 import { GlobalDocumentSettings, PortfolioPage } from '../types/portfolio';
 import { PageCanvas } from './PageCanvas';
+import { generateStandaloneWebHtml } from '../utils/webPortfolioExporter';
 
 interface PdfExportModalProps {
   isOpen: boolean;
@@ -217,6 +218,19 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
     window.print();
   };
 
+  const handleExportWebHtml = () => {
+    const htmlContent = generateStandaloneWebHtml(pages, globalSettings);
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const baseName = filename.replace(/\.pdf$/i, '');
+    a.download = `${baseName}-web-monograph.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportDone(true);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/60 backdrop-blur-xs p-4 no-print">
       <div className="bg-white border border-stone-200 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
@@ -368,6 +382,17 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                   <span>Image Pack (ZIP)</span>
                 </>
               )}
+            </button>
+
+            <button
+              type="button"
+              disabled={isExporting || isExportingZip}
+              onClick={handleExportWebHtml}
+              className="px-3 py-2 text-xs font-medium text-stone-700 hover:text-stone-900 bg-white border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+              title="Export as a self-contained offline interactive HTML web portfolio"
+            >
+              <Globe className="w-3.5 h-3.5 text-amber-600" />
+              <span>Web Viewer (.html)</span>
             </button>
           </div>
 

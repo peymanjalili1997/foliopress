@@ -8,9 +8,12 @@ import {
   ArrowLeftRight,
   ArrowUp,
   Bold,
+  BookmarkPlus,
+  BookOpen,
   Briefcase,
   Check,
   Columns,
+  Compass,
   Copy,
   FilePlus2,
   FileText,
@@ -61,6 +64,7 @@ import {
   PortfolioBlock,
   PortfolioPage,
   ProcessStepItem,
+  SavedCustomBlock,
   ServiceOfferItem,
   SpecItem,
   TextStyle,
@@ -183,6 +187,27 @@ const BLOCK_DEFINITIONS: BlockDefinition[] = [
     description: 'Key facts, scope, year & location metadata',
     icon: Layers,
   },
+  {
+    type: 'arch-scale-compass',
+    label: 'Scale Bar & Compass',
+    category: 'structure',
+    description: 'Drawing ratio scale bar & rotating north compass',
+    icon: Compass,
+  },
+  {
+    type: 'project-factsheet',
+    label: 'Project Factsheet',
+    category: 'structure',
+    description: 'Publication-ready technical architectural specs',
+    icon: FileText,
+  },
+  {
+    type: 'table-of-contents',
+    label: 'Table of Contents',
+    category: 'structure',
+    description: 'Dynamic portfolio page directory & index',
+    icon: BookOpen,
+  },
 
   // Design Accents & Utilities
   {
@@ -230,6 +255,10 @@ interface InspectorSidebarProps {
   onOpenStockLibrary?: () => void;
   onAddBlock: (type: BlockType) => void;
   onAiPolishText?: (style: 'editorial' | 'concise' | 'technical' | 'grammar') => void;
+  savedCustomBlocks?: SavedCustomBlock[];
+  onSaveCustomBlock?: (block: PortfolioBlock) => void;
+  onInsertCustomBlock?: (block: PortfolioBlock) => void;
+  onDeleteCustomBlock?: (id: string) => void;
 }
 
 export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
@@ -254,6 +283,10 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   onOpenStockLibrary,
   onAddBlock,
   onAiPolishText,
+  savedCustomBlocks,
+  onSaveCustomBlock,
+  onInsertCustomBlock,
+  onDeleteCustomBlock,
 }) => {
   const primaryUploadRef = useRef<HTMLInputElement | null>(null);
   const secondaryUploadRef = useRef<HTMLInputElement | null>(null);
@@ -392,8 +425,16 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
       },
       {
         id: 'structure',
-        label: 'Case Study & Methodology',
-        types: ['client-testimonial', 'process-steps', 'services-grid', 'spec-grid'],
+        label: 'Architecture & Case Study',
+        types: [
+          'arch-scale-compass',
+          'project-factsheet',
+          'table-of-contents',
+          'client-testimonial',
+          'process-steps',
+          'services-grid',
+          'spec-grid',
+        ],
       },
       {
         id: 'accent',
@@ -404,6 +445,56 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
 
     return (
       <div className="space-y-4">
+        {/* Saved Custom Components */}
+        {savedCustomBlocks && savedCustomBlocks.length > 0 && (
+          <div className="space-y-1.5 pb-3 border-b border-stone-200">
+            <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-amber-800 block px-0.5">
+              My Saved Components ({savedCustomBlocks.length})
+            </span>
+            <div className="space-y-1.5">
+              {savedCustomBlocks.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-2 bg-amber-50/70 hover:bg-amber-50 border border-amber-200/80 rounded-lg flex items-center justify-between gap-2 transition-all"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-stone-900 truncate">
+                      {item.name}
+                    </div>
+                    <div className="text-[10px] text-stone-500 capitalize">
+                      {item.block.type.replace(/-/g, ' ')}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {onInsertCustomBlock && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onInsertCustomBlock(item.block);
+                          onTabChange('element');
+                        }}
+                        className="px-2 py-1 text-[11px] font-medium bg-stone-900 hover:bg-stone-800 text-white rounded transition-colors"
+                      >
+                        Insert
+                      </button>
+                    )}
+                    {onDeleteCustomBlock && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteCustomBlock(item.id)}
+                        className="p-1 text-stone-400 hover:text-red-500 rounded transition-colors"
+                        title="Delete saved component"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {categories.map((cat) => {
           const items = BLOCK_DEFINITIONS.filter((b) => cat.types.includes(b.type));
           return (
@@ -578,6 +669,16 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
                       </>
+                    )}
+                    {onSaveCustomBlock && (
+                      <button
+                        type="button"
+                        onClick={() => onSaveCustomBlock(selectedBlock)}
+                        className="p-1 hover:text-amber-700 hover:bg-amber-50 rounded text-stone-500 transition-colors"
+                        title="Save to My Components Library"
+                      >
+                        <BookmarkPlus className="w-3.5 h-3.5" />
+                      </button>
                     )}
                     {onDuplicateBlock && (
                       <button
@@ -773,6 +874,48 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                           <option value="grayscale">Monochrome B&W</option>
                           <option value="warm">Warm Archival</option>
                           <option value="contrast">High Contrast</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Aspect Ratio & Focal Point (Crop) */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">Aspect Ratio</label>
+                        <select
+                          value={currentImgStyle.aspectRatio || 'auto'}
+                          onChange={(e) =>
+                            onUpdateImageStyle({
+                              aspectRatio: e.target.value as any,
+                            })
+                          }
+                          className="w-full h-7 px-2 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-800"
+                        >
+                          <option value="auto">Auto / Fixed Height</option>
+                          <option value="1/1">1:1 Square</option>
+                          <option value="4/3">4:3 Standard</option>
+                          <option value="16/9">16:9 Cinematic</option>
+                          <option value="3/2">3:2 Classic Photo</option>
+                          <option value="21/9">21:9 Ultra-Wide</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">Focal Point</label>
+                        <select
+                          value={currentImgStyle.focalPoint || 'center'}
+                          onChange={(e) =>
+                            onUpdateImageStyle({
+                              focalPoint: e.target.value as any,
+                            })
+                          }
+                          className="w-full h-7 px-2 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-800 capitalize"
+                        >
+                          <option value="center">Center</option>
+                          <option value="top">Top (Roof / Sky)</option>
+                          <option value="bottom">Bottom (Ground / Base)</option>
+                          <option value="left">Left</option>
+                          <option value="right">Right</option>
                         </select>
                       </div>
                     </div>
@@ -1467,6 +1610,263 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                           )}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Architectural Scale Bar & North Compass Inspector */}
+                {selectedBlock.type === 'arch-scale-compass' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <Compass className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Scale Bar & North Compass</span>
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">Scale Ratio</label>
+                        <select
+                          value={selectedBlock.scaleRatio || '1:100'}
+                          onChange={(e) =>
+                            onUpdateBlock(selectedBlock.id, { scaleRatio: e.target.value })
+                          }
+                          className="w-full h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded text-stone-900 font-mono"
+                        >
+                          <option value="1:20">1:20 Detail</option>
+                          <option value="1:50">1:50 Interior</option>
+                          <option value="1:100">1:100 Plan</option>
+                          <option value="1:200">1:200 Section</option>
+                          <option value="1:500">1:500 Site Plan</option>
+                          <option value="1:1000">1:1000 Masterplan</option>
+                          <option value="N.T.S.">N.T.S. (Not to Scale)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">
+                          Unit & Total Bar
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min={1}
+                            max={500}
+                            value={selectedBlock.scaleLengthMeters || 10}
+                            onChange={(e) =>
+                              onUpdateBlock(selectedBlock.id, {
+                                scaleLengthMeters: Number(e.target.value) || 10,
+                              })
+                            }
+                            className="w-16 h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded text-stone-900 font-mono"
+                          />
+                          <select
+                            value={selectedBlock.scaleUnit || 'metric'}
+                            onChange={(e) =>
+                              onUpdateBlock(selectedBlock.id, {
+                                scaleUnit: e.target.value as 'metric' | 'imperial',
+                              })
+                            }
+                            className="flex-1 h-8 px-1.5 text-xs bg-stone-50 border border-stone-200 rounded text-stone-900"
+                          >
+                            <option value="metric">m (Meters)</option>
+                            <option value="imperial">ft (Feet)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between text-[11px] text-stone-600">
+                        <span>North Angle Rotation</span>
+                        <span className="font-mono font-bold text-stone-900">
+                          {selectedBlock.northAngleDeg ?? 0}°
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        step="5"
+                        value={selectedBlock.northAngleDeg ?? 0}
+                        onChange={(e) =>
+                          onUpdateBlock(selectedBlock.id, {
+                            northAngleDeg: Number(e.target.value),
+                          })
+                        }
+                        className="w-full accent-stone-900 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">
+                          Compass Style
+                        </label>
+                        <select
+                          value={selectedBlock.compassStyle || 'minimal-needle'}
+                          onChange={(e) =>
+                            onUpdateBlock(selectedBlock.id, {
+                              compassStyle: e.target.value as any,
+                            })
+                          }
+                          className="w-full h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded text-stone-900"
+                        >
+                          <option value="minimal-needle">Minimal Needle</option>
+                          <option value="circle-arrow">Circle Arrow</option>
+                          <option value="architectural-cross">Architectural Cross</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">
+                          Visible Elements
+                        </label>
+                        <div className="flex items-center gap-2 pt-1 text-xs">
+                          <label className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedBlock.showScaleBar !== false}
+                              onChange={(e) =>
+                                onUpdateBlock(selectedBlock.id, { showScaleBar: e.target.checked })
+                              }
+                              className="rounded text-stone-900"
+                            />
+                            <span>Scale</span>
+                          </label>
+                          <label className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedBlock.showNorthArrow !== false}
+                              onChange={(e) =>
+                                onUpdateBlock(selectedBlock.id, {
+                                  showNorthArrow: e.target.checked,
+                                })
+                              }
+                              className="rounded text-stone-900"
+                            />
+                            <span>North</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Factsheet Inspector */}
+                {selectedBlock.type === 'project-factsheet' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Project Factsheet Settings</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentItems = selectedBlock.factsheetItems || [];
+                          onUpdateBlock(selectedBlock.id, {
+                            factsheetItems: [
+                              ...currentItems,
+                              {
+                                id:
+                                  typeof createUid === 'function'
+                                    ? createUid('fi')
+                                    : `fi-${Date.now()}`,
+                                label: 'NEW SPECIFICATION',
+                                value: 'Detail or dimension',
+                              },
+                            ],
+                          });
+                        }}
+                        className="text-[11px] font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Row</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">
+                          Grid Columns
+                        </label>
+                        <select
+                          value={selectedBlock.factsheetLayout || 'grid-3col'}
+                          onChange={(e) =>
+                            onUpdateBlock(selectedBlock.id, {
+                              factsheetLayout: e.target.value as any,
+                            })
+                          }
+                          className="w-full h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded text-stone-900"
+                        >
+                          <option value="grid-3col">3 Columns (Standard)</option>
+                          <option value="grid-2col">2 Columns (Wide)</option>
+                          <option value="compact-strip">4 Columns (Compact)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">Title</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.factsheetTitle || ''}
+                          onChange={(e) =>
+                            onUpdateBlock(selectedBlock.id, { factsheetTitle: e.target.value })
+                          }
+                          placeholder="Factsheet Header"
+                          className="w-full h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded text-stone-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Table of Contents Inspector */}
+                {selectedBlock.type === 'table-of-contents' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Table of Contents Directory</span>
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">Line Style</label>
+                        <select
+                          value={selectedBlock.tocStyle || 'editorial-dots'}
+                          onChange={(e) =>
+                            onUpdateBlock(selectedBlock.id, { tocStyle: e.target.value as any })
+                          }
+                          className="w-full h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded text-stone-900"
+                        >
+                          <option value="editorial-dots">Editorial Dotted Line</option>
+                          <option value="minimal-list">Clean Minimalist</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">
+                          Section Badges
+                        </label>
+                        <div className="pt-2">
+                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedBlock.tocIncludeSectionBadges !== false}
+                              onChange={(e) =>
+                                onUpdateBlock(selectedBlock.id, {
+                                  tocIncludeSectionBadges: e.target.checked,
+                                })
+                              }
+                              className="rounded text-stone-900"
+                            />
+                            <span>Show Badges</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

@@ -19,6 +19,7 @@ import {
   Folder,
   FolderOpen,
   FolderPlus,
+  Grid,
   GripVertical,
   Layers,
   LayoutGrid,
@@ -65,6 +66,7 @@ import {
   PortfolioBlock,
   PortfolioDocument,
   PortfolioPage,
+  SavedCustomBlock,
   TextStyle,
   TextTargetField,
 } from './types/portfolio';
@@ -73,6 +75,18 @@ import { loadGoogleFont } from './utils/googleFonts';
 const STORAGE_KEY_V1 = 'foliopress_portfolio_state_v1';
 const STORAGE_KEY_DOCS = 'foliopress_documents_v2';
 const STORAGE_KEY_ACTIVE_DOC_ID = 'foliopress_active_doc_id_v2';
+const STORAGE_KEY_SAVED_BLOCKS = 'foliopress_saved_blocks_v1';
+
+function loadSavedCustomBlocks(): SavedCustomBlock[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_SAVED_BLOCKS);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
 
 function loadInitialDocuments(): PortfolioDocument[] {
   try {
@@ -217,6 +231,16 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [draggedPageIdx, setDraggedPageIdx] = useState<number | null>(null);
 
+  // Print Bleed (3mm) & 12-Column Swiss Modular Grid overlays
+  const [showBleedGuides, setShowBleedGuides] = useState<boolean>(false);
+  const [showColumnGrid, setShowColumnGrid] = useState<boolean>(false);
+
+  // Component Library / Saved Custom Blocks
+  const [savedBlocks, setSavedBlocks] = useState<SavedCustomBlock[]>(loadSavedCustomBlocks);
+
+  // Cross-project page copying
+  const [copyingPageIdx, setCopyingPageIdx] = useState<number | null>(null);
+
   // Undo / Redo History Stack
   const [history, setHistory] = useState<PortfolioPage[][]>(() => [pages]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -244,12 +268,18 @@ export default function App() {
     }
   };
 
-  // Keyboard shortcut listener for Undo/Redo & Presentation F5 & Command Palette Cmd+K
+  // Keyboard shortcut listener for Undo/Redo & Presentation F5 & Command Palette Cmd+K & Grid Cmd+'
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "'") {
+        e.preventDefault();
+        setShowColumnGrid((prev) => !prev);
         return;
       }
 
@@ -463,6 +493,84 @@ export default function App() {
       }
     };
     reader.readAsText(file);
+  };
+
+  // Component Library / Saved Custom Blocks Handlers
+  const handleSaveCustomBlock = (block: PortfolioBlock) => {
+    const defaultName =
+      block.type.replace(/-/g, ' ').toUpperCase() + ` (Component ${savedBlocks.length + 1})`;
+    const name = window.prompt('Name this reusable component for your library:', defaultName);
+    if (!name || !name.trim()) return;
+    const newComponent: SavedCustomBlock = {
+      id: createUid('comp'),
+      name: name.trim(),
+      createdAt: Date.now(),
+      block: JSON.parse(JSON.stringify(block)),
+    };
+    const next = [newComponent, ...savedBlocks];
+    setSavedBlocks(next);
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVED_BLOCKS, JSON.stringify(next));
+    } catch {}
+  };
+
+  const handleInsertCustomBlock = (block: PortfolioBlock) => {
+    if (!currentPage) return;
+    const cloned: PortfolioBlock = {
+      ...JSON.parse(JSON.stringify(block)),
+      id: createUid('blk'),
+    };
+    setPages((prev) => {
+      const updated = prev.map((p) =>
+        p.id === currentPage.id ? { ...p, blocks: [...(p.blocks || []), cloned] } : p
+      );
+      pushHistory(updated);
+      return updated;
+    });
+    setSelectedBlockId(cloned.id);
+  };
+
+  const handleDeleteCustomBlock = (id: string) => {
+    const next = savedBlocks.filter((b) => b.id !== id);
+    setSavedBlocks(next);
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVED_BLOCKS, JSON.stringify(next));
+    } catch {}
+  };
+
+  // Cross-project page clone & transfer
+  const handleCopyPageToDocument = (pageIdx: number, targetDocId: string) => {
+    const sourcePage = pages[pageIdx];
+    const targetDoc = documents.find((d) => d.id === targetDocId);
+    if (!sourcePage || !targetDoc) return;
+
+    const clonedPage: PortfolioPage = {
+      ...JSON.parse(JSON.stringify(sourcePage)),
+      id: createUid('page'),
+      title: `${sourcePage.title} (Copy)`,
+      blocks: (sourcePage.blocks || []).map((b: PortfolioBlock) => ({
+        ...b,
+        id: createUid('blk'),
+      })),
+    };
+
+    setDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === targetDocId
+          ? { ...doc, pages: [...doc.pages, clonedPage], updatedAt: Date.now() }
+          : doc
+      )
+    );
+    setCopyingPageIdx(null);
+    alert(`Page "${sourcePage.title}" was copied into portfolio "${targetDoc.name}"!`);
+  };
+
+  const handleNavigatePage = (pageId: string) => {
+    setActivePageId(pageId);
+    const targetPage = pages.find((p) => p.id === pageId);
+    if (targetPage && targetPage.blocks?.length) {
+      setSelectedBlockId(targetPage.blocks[0].id);
+    }
   };
 
   // Dynamic Google Fonts Auto-Loader for loaded portfolio and active pages
@@ -865,6 +973,44 @@ export default function App() {
             tags: ['4K Plates', 'Simulation'],
           },
         ],
+      };
+    } else if (type === 'arch-scale-compass') {
+      newBlock = {
+        ...newBlock,
+        kicker: 'ARCHITECTURAL DRAWING SPECIFICATIONS',
+        scaleRatio: '1:100',
+        scaleUnit: 'metric',
+        scaleLengthMeters: 10,
+        northAngleDeg: 0,
+        showNorthArrow: true,
+        showScaleBar: true,
+        compassStyle: 'minimal-needle',
+      };
+    } else if (type === 'project-factsheet') {
+      newBlock = {
+        ...newBlock,
+        kicker: 'PROJECT ARCHIVE & TECHNICAL SPECIFICATION',
+        factsheetTitle: 'Monograph Architectural Specifications',
+        factsheetLayout: 'grid-3col',
+        factsheetItems: [
+          { id: createUid('fi'), label: 'PROJECT NAME', value: 'Pavilion of Light & Stone' },
+          { id: createUid('fi'), label: 'TYPOLOGY', value: 'Cultural Gallery & Archive' },
+          { id: createUid('fi'), label: 'LOCATION', value: 'Engadin Valley, Switzerland' },
+          { id: createUid('fi'), label: 'YEAR / STATUS', value: '2025 – 2026 (Completed)' },
+          { id: createUid('fi'), label: 'GROSS BUILT AREA', value: '3,850 m² (41,400 sq ft)' },
+          { id: createUid('fi'), label: 'CLIENT', value: 'Cantonal Cultural Trust' },
+          { id: createUid('fi'), label: 'LEAD ARCHITECT', value: 'Julian Sterling Studio' },
+          { id: createUid('fi'), label: 'STRUCTURAL ENGINEER', value: 'Buro Weber & Partner' },
+          { id: createUid('fi'), label: 'PHOTOGRAPHY CREDITS', value: 'Hélène Binet Studio' },
+        ],
+      };
+    } else if (type === 'table-of-contents') {
+      newBlock = {
+        ...newBlock,
+        kicker: 'PORTFOLIO DIRECTORY',
+        text: 'Table of Contents & Selected Index',
+        tocStyle: 'editorial-dots',
+        tocIncludeSectionBadges: true,
       };
     }
 
@@ -1835,6 +1981,23 @@ export default function App() {
                       </div>
 
                       <div className="flex items-center gap-1">
+                        {documents.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCopyingPageIdx(copyingPageIdx === idx ? null : idx);
+                            }}
+                            title="Copy Page to Another Document"
+                            className={`p-1 rounded transition-colors ${
+                              copyingPageIdx === idx
+                                ? 'bg-amber-100 text-amber-900 font-bold'
+                                : 'hover:text-stone-900 hover:bg-stone-100'
+                            }`}
+                          >
+                            <FolderPlus className="w-3 h-3 text-stone-500" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1860,6 +2023,32 @@ export default function App() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Copy Page to Other Project Dropdown */}
+                    {copyingPageIdx === idx && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-2 p-2 bg-stone-50 border border-stone-200 rounded-lg text-xs space-y-1.5 animate-in fade-in duration-100"
+                      >
+                        <div className="text-[10px] font-semibold text-stone-600 uppercase tracking-wider">
+                          Copy page to:
+                        </div>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {documents
+                            .filter((d) => d.id !== activeDocId)
+                            .map((targetDoc) => (
+                              <button
+                                key={targetDoc.id}
+                                type="button"
+                                onClick={() => handleCopyPageToDocument(idx, targetDoc.id)}
+                                className="w-full px-2 py-1 bg-white hover:bg-stone-200/70 border border-stone-200 rounded text-left truncate font-medium text-stone-800 transition-colors"
+                              >
+                                {targetDoc.name}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1998,42 +2187,75 @@ export default function App() {
               </button>
             </div>
 
-            {/* Right: Zoom Controls & Preview Mode Toggle */}
+            {/* Right: Zoom Controls, Bleed / Grid Overlays & Preview Mode Toggle */}
             <div className="flex items-center gap-2 tabular-nums">
               {workspaceMode !== 'spread' && (
-                <div className="flex items-center gap-1 bg-white border border-stone-200/90 rounded-md px-1.5 py-0.5">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCanvasZoom((z) => Math.max(0.45, Number((z - 0.08).toFixed(2))))
-                    }
-                    className="p-1 hover:text-stone-900"
-                    title="Zoom Out"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="text-[11px] font-medium text-stone-800 min-w-[42px] text-center">
-                    {Math.round(canvasZoom * 100)}%
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCanvasZoom((z) => Math.min(1.15, Number((z + 0.08).toFixed(2))))
-                    }
-                    className="p-1 hover:text-stone-900"
-                    title="Zoom In"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCanvasZoom(0.78)}
-                    className="p-1 text-stone-400 hover:text-stone-900 border-l border-stone-200 pl-1.5"
-                    title="Reset Fit Zoom"
-                  >
-                    <Maximize2 className="w-3 h-3" />
-                  </button>
-                </div>
+                <>
+                  {/* Grid & Bleed Overlays */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowColumnGrid((prev) => !prev)}
+                      className={`px-2 py-1 text-xs font-medium rounded-md border flex items-center gap-1 transition-colors cursor-pointer ${
+                        showColumnGrid
+                          ? 'bg-rose-50 text-rose-900 border-rose-300 shadow-xs'
+                          : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                      }`}
+                      title="Toggle 12-Column Swiss Modular Grid (⌘' / Ctrl+')"
+                    >
+                      <Grid className="w-3.5 h-3.5 text-rose-500" />
+                      <span className="hidden sm:inline">12-Col</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowBleedGuides((prev) => !prev)}
+                      className={`px-2 py-1 text-xs font-medium rounded-md border flex items-center gap-1 transition-colors cursor-pointer ${
+                        showBleedGuides
+                          ? 'bg-amber-50 text-amber-900 border-amber-300 shadow-xs'
+                          : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                      }`}
+                      title="Toggle 3mm Print Bleed Guides & Crop Marks"
+                    >
+                      <span className="text-[10px] font-mono font-bold text-amber-600">3mm</span>
+                      <span className="hidden sm:inline">Bleed</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-white border border-stone-200/90 rounded-md px-1.5 py-0.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCanvasZoom((z) => Math.max(0.45, Number((z - 0.08).toFixed(2))))
+                      }
+                      className="p-1 hover:text-stone-900"
+                      title="Zoom Out"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="text-[11px] font-medium text-stone-800 min-w-[42px] text-center">
+                      {Math.round(canvasZoom * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCanvasZoom((z) => Math.min(1.15, Number((z + 0.08).toFixed(2))))
+                      }
+                      className="p-1 hover:text-stone-900"
+                      title="Zoom In"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCanvasZoom(0.78)}
+                      className="p-1 text-stone-400 hover:text-stone-900 border-l border-stone-200 pl-1.5"
+                      title="Reset Fit Zoom"
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </>
               )}
 
               <button
@@ -2194,6 +2416,10 @@ export default function App() {
                   onInsertDroppedImages={handleInsertDroppedImages}
                   isExportMode={workspaceMode === 'preview'}
                   scale={canvasZoom}
+                  showBleedGuides={showBleedGuides}
+                  showColumnGrid={showColumnGrid}
+                  allPages={pages}
+                  onNavigatePage={handleNavigatePage}
                 />
               </div>
             )}
@@ -2224,6 +2450,10 @@ export default function App() {
             onOpenStockLibrary={() => setIsStockLibraryOpen(true)}
             onAddBlock={handleAddBlock}
             onAiPolishText={handleAiPolishText}
+            savedCustomBlocks={savedBlocks}
+            onSaveCustomBlock={handleSaveCustomBlock}
+            onInsertCustomBlock={handleInsertCustomBlock}
+            onDeleteCustomBlock={handleDeleteCustomBlock}
           />
         )}
       </div>
