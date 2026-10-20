@@ -9,6 +9,7 @@ import {
   Palette,
   Plus,
   RefreshCw,
+  Search,
   Sliders,
   Trash2,
   Type,
@@ -33,7 +34,7 @@ import {
   TextTargetField,
 } from '../types/portfolio';
 import { GoogleFontPicker } from './GoogleFontPicker';
-import { loadGoogleFont } from '../utils/googleFonts';
+import { getCleanFontName, loadGoogleFont, searchGoogleFonts } from '../utils/googleFonts';
 
 export type InspectorTab = 'element' | 'page' | 'global';
 
@@ -75,6 +76,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   const primaryUploadRef = useRef<HTMLInputElement | null>(null);
   const secondaryUploadRef = useRef<HTMLInputElement | null>(null);
   const [sidebarTemplateFilter, setSidebarTemplateFilter] = useState<'all' | 'portrait' | 'landscape'>('all');
+  const [sidebarFontSearch, setSidebarFontSearch] = useState('');
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isSecondary = false) => {
     const file = e.target.files?.[0];
@@ -699,26 +701,48 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                     </div>
                   </div>
 
-                  {/* Font Family Quick Gallery */}
-                  <div className="space-y-1.5 pt-2">
-                    <label className="block text-[11px] text-stone-500">
-                      Curated Google Typography Directory
-                    </label>
+                  {/* Font Family Live Gallery */}
+                  <div className="space-y-2 pt-2 border-t border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-semibold text-stone-900">
+                        Live Google Font Directory
+                      </label>
+                      <span className="text-[10px] text-stone-400 font-mono">
+                        {sidebarFontSearch
+                          ? `${searchGoogleFonts(sidebarFontSearch, 'All', 50).length} found`
+                          : '1,938 Google Fonts'}
+                      </span>
+                    </div>
+
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2" />
+                      <input
+                        type="text"
+                        value={sidebarFontSearch}
+                        onChange={(e) => setSidebarFontSearch(e.target.value)}
+                        placeholder="Live search (e.g. Poppins, Oswald, Inter)..."
+                        className="w-full pl-8 pr-2.5 py-1 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900"
+                      />
+                    </div>
+
                     <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                      {ENGLISH_FONTS.map((font) => {
-                        const isCurrent = activeStyle.fontFamily === font.family;
+                      {searchGoogleFonts(sidebarFontSearch, 'All', 50).map((font) => {
+                        const isCurrent =
+                          getCleanFontName(activeStyle.fontFamily).toLowerCase() ===
+                          font.name.toLowerCase();
                         return (
                           <button
                             key={font.name}
                             type="button"
+                            onMouseEnter={() => loadGoogleFont(font.name)}
                             onClick={async () => {
-                              await loadGoogleFont(font.family);
+                              await loadGoogleFont(font.name);
                               onUpdateTextStyle({ fontFamily: font.family }, activeTextTarget);
                             }}
                             className={`w-full text-left px-3 py-2 rounded-lg border transition-all flex items-center justify-between gap-2 ${
                               isCurrent
-                                ? 'border-stone-900 bg-stone-900/5 text-stone-950 font-medium'
-                                : 'border-stone-200/80 hover:border-stone-300 text-stone-800'
+                                ? 'border-stone-900 bg-stone-900/5 text-stone-950 font-medium ring-1 ring-stone-900/20'
+                                : 'border-stone-200/80 hover:border-stone-300 text-stone-800 hover:bg-stone-50'
                             }`}
                           >
                             <div className="min-w-0">
@@ -729,7 +753,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                                 {font.name}
                               </div>
                               <div className="text-[10px] text-stone-400 truncate">
-                                {font.category} · {font.sample}
+                                {font.category}
                               </div>
                             </div>
                             {isCurrent && <Check className="w-3.5 h-3.5 text-stone-900 shrink-0" />}

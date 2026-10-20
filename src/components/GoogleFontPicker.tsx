@@ -1,13 +1,19 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Search, Sparkles, Type } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check, ChevronDown, Loader2, Search, Sparkles, Type, X } from 'lucide-react';
 import { FontOption } from '../types/portfolio';
-import { EXTENDED_GOOGLE_FONTS, getCleanFontName, loadGoogleFont } from '../utils/googleFonts';
+import {
+  ALL_GOOGLE_FONTS,
+  getCleanFontName,
+  loadGoogleFont,
+  searchGoogleFonts,
+} from '../utils/googleFonts';
 
 interface GoogleFontPickerProps {
   value: string;
   onChange: (fontFamily: string) => void;
   disabled?: boolean;
   className?: string;
+  placeholder?: string;
 }
 
 export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
@@ -15,12 +21,14 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
   onChange,
   disabled = false,
   className = '',
+  placeholder = 'Select Google Font',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
-  const [customFonts, setCustomFonts] = useState<FontOption[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const cleanCurrentName = getCleanFontName(value);
 
@@ -33,6 +41,8 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
     };
     if (isOpen) {
       document.addEventListener('mousedown', handleOutsideClick);
+      // Auto focus search input when opened
+      setTimeout(() => searchInputRef.current?.focus(), 50);
     }
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [isOpen]);
@@ -44,47 +54,41 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
     }
   }, [value]);
 
-  const allFonts = [...customFonts, ...EXTENDED_GOOGLE_FONTS];
+  // Real-time search across all 1,938 Google Fonts
+  const matchingFonts = searchGoogleFonts(searchQuery, categoryFilter, 80);
 
-  const filteredFonts = allFonts.filter((f) => {
-    const matchesSearch =
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCat =
-      categoryFilter === 'All' ||
-      (categoryFilter === 'Serif' && f.category.includes('Serif')) ||
-      (categoryFilter === 'Sans' && f.category.includes('Sans')) ||
-      (categoryFilter === 'Display' && f.category.includes('Display')) ||
-      (categoryFilter === 'Mono' && f.category.includes('Mono'));
-    return matchesSearch && matchesCat;
-  });
-
-  const handleSelectFont = async (font: FontOption) => {
-    await loadGoogleFont(font.family);
-    onChange(font.family);
-    setIsOpen(false);
-  };
-
-  const handleLoadCustomFont = async (name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const formattedFamily = `'${trimmed}', sans-serif`;
-    await loadGoogleFont(trimmed);
-    const newFont: FontOption = {
-      name: trimmed,
-      family: formattedFamily,
-      category: 'Online Google Font',
-      sample: 'Live Online Google Font',
-    };
-    setCustomFonts((prev) => [newFont, ...prev.filter((f) => f.name.toLowerCase() !== trimmed.toLowerCase())]);
-    onChange(formattedFamily);
-    setSearchQuery('');
-    setIsOpen(false);
-  };
-
-  const exactMatchExists = allFonts.some(
+  const exactMatch = matchingFonts.find(
     (f) => f.name.toLowerCase() === searchQuery.trim().toLowerCase()
   );
+
+  const handleSelectFont = async (font: FontOption | string) => {
+    const fontName = typeof font === 'string' ? font.trim() : font.name;
+    const fontFamily =
+      typeof font === 'string' ? `'${fontName}', sans-serif` : font.family;
+
+    if (!fontName) return;
+
+    setIsLoading(true);
+    await loadGoogleFont(fontName);
+    setIsLoading(false);
+
+    onChange(fontFamily);
+    setIsOpen(false);
+    setSearchQuery('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (matchingFonts.length > 0) {
+        handleSelectFont(matchingFonts[0]);
+      } else if (searchQuery.trim()) {
+        handleSelectFont(searchQuery.trim());
+      }
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
 
   return (
     <div ref={containerRef} className={`relative inline-block ${className}`}>
@@ -94,104 +98,145 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
         disabled={disabled}
         onClick={() => setIsOpen((prev) => !prev)}
         style={{ fontFamily: value }}
-        className="h-8 px-2.5 text-xs font-medium bg-stone-50 hover:bg-stone-100/90 border border-stone-200 rounded-md text-stone-900 flex items-center justify-between gap-2 min-w-[170px] max-w-[210px] transition-all disabled:opacity-45 disabled:pointer-events-none text-left shadow-2xs"
+        className="h-8 px-2.5 text-xs font-medium bg-stone-50 hover:bg-stone-100/90 border border-stone-200 rounded-md text-stone-900 flex items-center justify-between gap-2 w-full transition-all disabled:opacity-45 disabled:pointer-events-none text-left shadow-2xs"
+        title={cleanCurrentName ? `Active Font: ${cleanCurrentName}` : placeholder}
       >
-        <span className="truncate">{cleanCurrentName || 'Select Google Font'}</span>
-        <ChevronDown className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Type className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <span className="truncate">{cleanCurrentName || placeholder}</span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {isLoading && <Loader2 className="w-3 h-3 text-stone-500 animate-spin" />}
+          <ChevronDown className="w-3.5 h-3.5 text-stone-400" />
+        </div>
       </button>
 
-      {/* Popover Menu */}
+      {/* Real-time Google Fonts Search Popover */}
       {isOpen && (
-        <div className="absolute left-0 top-full mt-1.5 w-76 bg-white border border-stone-200/90 rounded-xl shadow-xl z-50 p-2.5 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" />
+        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 w-80 sm:w-96 max-w-[92vw] bg-white border border-stone-200/90 rounded-xl shadow-2xl z-50 p-2.5 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100">
+          {/* Search Header */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5" />
             <input
+              ref={searchInputRef}
               type="text"
-              autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchQuery.trim() && !exactMatchExists) {
-                  e.preventDefault();
-                  handleLoadCustomFont(searchQuery);
-                }
-              }}
-              placeholder="Search or enter any Google Font..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900"
+              onKeyDown={handleKeyDown}
+              placeholder="Search 1,900+ Google Fonts (e.g. Poppins, Oswald)..."
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 focus:bg-white transition-colors"
             />
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-1 p-0.5 bg-stone-100/80 rounded-md text-[10px]">
-            {['All', 'Serif', 'Sans', 'Display', 'Mono'].map((cat) => (
+            {searchQuery && (
               <button
-                key={cat}
                 type="button"
-                onClick={() => setCategoryFilter(cat)}
-                className={`flex-1 py-0.5 rounded font-medium transition-colors ${
-                  categoryFilter === cat
-                    ? 'bg-white text-stone-900 shadow-2xs font-semibold'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 p-0.5 text-stone-400 hover:text-stone-700 rounded"
               >
-                {cat}
+                <X className="w-3.5 h-3.5" />
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Arbitrary Google Font Add Option if query doesn't match predefined list */}
-          {searchQuery.trim().length > 1 && !exactMatchExists && (
+          {/* Category Filter Pills & Results Count */}
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1 p-0.5 bg-stone-100/90 rounded-md text-[10px] shrink-0">
+              {['All', 'Sans', 'Serif', 'Display', 'Mono'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                    categoryFilter === cat
+                      ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-stone-400 tabular-nums truncate">
+              {searchQuery
+                ? `${matchingFonts.length} match${matchingFonts.length === 1 ? '' : 'es'}`
+                : `${ALL_GOOGLE_FONTS.length.toLocaleString()} Google Fonts`}
+            </span>
+          </div>
+
+          {/* Direct Arbitrary Query Action */}
+          {searchQuery.trim().length > 1 && !exactMatch && (
             <button
               type="button"
-              onClick={() => handleLoadCustomFont(searchQuery)}
-              className="w-full p-2 rounded-lg bg-stone-900 text-white text-xs font-medium flex items-center justify-between gap-2 hover:bg-stone-800 transition-colors"
+              onClick={() => handleSelectFont(searchQuery.trim())}
+              className="w-full p-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center justify-between gap-2 transition-colors shadow-2xs text-left"
             >
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Load Google Font: <strong>"{searchQuery.trim()}"</strong></span>
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                <span className="truncate">
+                  Load & Set Google Font: <strong>"{searchQuery.trim()}"</strong>
+                </span>
               </div>
-              <Plus className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-mono text-stone-300 bg-stone-800 px-1.5 py-0.5 rounded shrink-0">
+                ↵ Enter
+              </span>
             </button>
           )}
 
-          {/* Font List */}
-          <div className="max-h-60 overflow-y-auto space-y-1 pr-1">
-            {filteredFonts.length === 0 ? (
-              <div className="py-6 text-center text-xs text-stone-500">
-                No matching fonts found. Press Enter to load "{searchQuery.trim()}" directly from Google Fonts.
+          {/* Real-time Matching Fonts List */}
+          <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
+            {matchingFonts.length === 0 ? (
+              <div className="py-6 px-3 text-center space-y-1">
+                <p className="text-xs font-medium text-stone-700">No matching font in catalog</p>
+                <p className="text-[11px] text-stone-400">
+                  Press <strong>Enter</strong> to fetch "{searchQuery.trim()}" directly from Google Fonts CDN.
+                </p>
               </div>
             ) : (
-              filteredFonts.map((font) => {
-                const isSelected = cleanCurrentName.toLowerCase() === font.name.toLowerCase();
+              matchingFonts.map((font) => {
+                const isSelected =
+                  cleanCurrentName.toLowerCase() === font.name.toLowerCase();
                 return (
                   <button
                     key={font.name}
                     type="button"
-                    onMouseEnter={() => loadGoogleFont(font.family)}
+                    onMouseEnter={() => loadGoogleFont(font.name)}
                     onClick={() => handleSelectFont(font)}
-                    className={`w-full p-2 text-left rounded-lg transition-colors flex items-center justify-between gap-2 ${
+                    className={`w-full p-2 text-left rounded-lg transition-all flex items-center justify-between gap-2 group ${
                       isSelected
-                        ? 'bg-stone-900 text-white'
+                        ? 'bg-stone-900 text-white shadow-2xs'
                         : 'hover:bg-stone-100 text-stone-800'
                     }`}
                   >
-                    <div className="min-w-0">
-                      <div
-                        style={{ fontFamily: font.family }}
-                        className="text-sm font-medium leading-tight truncate"
-                      >
-                        {font.name}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div
+                          style={{ fontFamily: font.family }}
+                          className="text-sm font-medium leading-tight truncate"
+                        >
+                          {font.name}
+                        </div>
+                        {isSelected && (
+                          <span className="text-[9px] bg-stone-800 text-stone-300 px-1 rounded uppercase tracking-wider font-mono">
+                            Current
+                          </span>
+                        )}
                       </div>
                       <div
-                        className={`text-[10px] truncate mt-0.5 ${
+                        className={`text-[10px] truncate mt-0.5 flex items-center gap-1.5 ${
                           isSelected ? 'text-stone-300' : 'text-stone-400'
                         }`}
                       >
-                        {font.category}
+                        <span>{font.category}</span>
+                        <span>·</span>
+                        <span className="opacity-80">Click to apply instantly</span>
                       </div>
                     </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                    {isSelected ? (
+                      <Check className="w-4 h-4 text-white shrink-0" />
+                    ) : (
+                      <span className="text-[10px] text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity font-mono shrink-0">
+                        Apply
+                      </span>
+                    )}
                   </button>
                 );
               })

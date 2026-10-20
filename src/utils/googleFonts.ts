@@ -2,7 +2,10 @@
  * Google Fonts Dynamic Loader & Directory
  */
 
+import { ALL_GOOGLE_FONTS } from '../data/allGoogleFonts';
 import { FontOption } from '../types/portfolio';
+
+export { ALL_GOOGLE_FONTS };
 
 const loadedFonts = new Set<string>();
 
@@ -314,3 +317,167 @@ export const EXTENDED_GOOGLE_FONTS: FontOption[] = [
     sample: 'ARCHITECTURAL_ENGINEERING_DATA',
   },
 ];
+
+export const POPULAR_GOOGLE_FONTS = new Set([
+  'Inter',
+  'Roboto',
+  'Open Sans',
+  'Montserrat',
+  'Lato',
+  'Poppins',
+  'Playfair Display',
+  'Oswald',
+  'Raleway',
+  'Merriweather',
+  'Lora',
+  'Nunito',
+  'Rubik',
+  'Work Sans',
+  'Plus Jakarta Sans',
+  'DM Sans',
+  'Cinzel',
+  'Cormorant Garamond',
+  'Space Grotesk',
+  'Syne',
+  'JetBrains Mono',
+  'Bebas Neue',
+  'Manrope',
+  'Urbanist',
+  'Outfit',
+  'Epilogue',
+  'Cabin',
+  'Fira Sans',
+  'Abril Fatface',
+  'Dancing Script',
+  'Pacifico',
+  'Caveat',
+  'Great Vibes',
+  'Sacramento',
+  'Cinzel Decorative',
+  'Libre Baskerville',
+  'EB Garamond',
+  'Spectral',
+  'Bodoni Moda',
+  'Fraunces',
+  'Newsreader',
+  'Space Mono',
+  'Inconsolata',
+  'Fira Code',
+  'Source Code Pro',
+  'Kanit',
+  'Quicksand',
+  'Barlow',
+  'Ubuntu',
+]);
+
+export function inferFontCategory(name: string): 'Serif' | 'Sans' | 'Display' | 'Mono' {
+  const lower = name.toLowerCase();
+  if (lower.includes('mono') || lower.includes('code')) return 'Mono';
+  if (
+    lower.includes('serif') ||
+    lower.includes('garamond') ||
+    lower.includes('minion') ||
+    lower.includes('didot') ||
+    lower.includes('bodoni') ||
+    lower.includes('baskerville') ||
+    lower.includes('caslon') ||
+    lower.includes('roman') ||
+    lower.includes('spectral') ||
+    lower.includes('newsreader') ||
+    lower.includes('fraunces') ||
+    lower.includes('lora') ||
+    lower.includes('merriweather') ||
+    lower.includes('cormorant')
+  ) {
+    return 'Serif';
+  }
+  if (
+    lower.includes('script') ||
+    lower.includes('brush') ||
+    lower.includes('hand') ||
+    lower.includes('callig') ||
+    lower.includes('vibes') ||
+    lower.includes('dancing') ||
+    lower.includes('pacifico') ||
+    lower.includes('caveat') ||
+    lower.includes('sacramento') ||
+    lower.includes('lobster') ||
+    lower.includes('display') ||
+    lower.includes('fatface') ||
+    lower.includes('bebas') ||
+    lower.includes('cinzel') ||
+    lower.includes('syne')
+  ) {
+    return 'Display';
+  }
+  return 'Sans';
+}
+
+export function searchGoogleFonts(
+  query: string,
+  categoryFilter: string = 'All',
+  limit: number = 75
+): FontOption[] {
+  const q = query.trim().toLowerCase();
+
+  // If no query, return curated editorial list matching category filter
+  if (!q) {
+    return EXTENDED_GOOGLE_FONTS.filter((f) => {
+      if (categoryFilter === 'All') return true;
+      return f.category.toLowerCase().includes(categoryFilter.toLowerCase());
+    });
+  }
+
+  // Rank and search across all 1,938 Google Fonts
+  const scored: { name: string; score: number }[] = [];
+
+  for (const name of ALL_GOOGLE_FONTS) {
+    const n = name.toLowerCase();
+    let score = 0;
+    if (n === q) score = 100;
+    else if (n.startsWith(q)) score = 80;
+    else if (n.split(/\s+/).some((w) => w.startsWith(q))) score = 60;
+    else if (n.includes(q)) score = 40;
+    else continue;
+
+    if (POPULAR_GOOGLE_FONTS.has(name)) score += 15;
+
+    // Filter by category if requested
+    if (categoryFilter !== 'All') {
+      const cat = inferFontCategory(name);
+      if (cat !== categoryFilter) continue;
+    }
+
+    scored.push({ name, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+
+  return scored.slice(0, limit).map((item) => {
+    // Check if item is in our curated list to get its exact sample & category
+    const curated = EXTENDED_GOOGLE_FONTS.find(
+      (c) => c.name.toLowerCase() === item.name.toLowerCase()
+    );
+    if (curated) return curated;
+
+    const cat = inferFontCategory(item.name);
+    const catLabel =
+      cat === 'Serif'
+        ? 'Editorial Serif'
+        : cat === 'Sans'
+        ? 'Architectural Sans'
+        : cat === 'Mono'
+        ? 'Technical Mono'
+        : 'Display Typeface';
+
+    const fallback =
+      cat === 'Serif' ? 'Georgia, serif' : cat === 'Mono' ? 'monospace' : 'sans-serif';
+
+    return {
+      name: item.name,
+      family: `'${item.name}', ${fallback}`,
+      category: `${catLabel} · Google Font`,
+      sample: 'Architectural portfolio & design monograph',
+    };
+  });
+}
