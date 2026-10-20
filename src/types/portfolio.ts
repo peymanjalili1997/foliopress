@@ -220,3 +220,12 @@ export interface GlobalDocumentSettings {
   headerRightText: string;
   footerLeftText: string;
 }
+
+export interface PortfolioDocument {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  pages: PortfolioPage[];
+  globalSettings: GlobalDocumentSettings;
+}

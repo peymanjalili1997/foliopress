@@ -30,7 +30,7 @@ import {
 
 export interface CommandItem {
   id: string;
-  category: 'Pages & Templates' | 'Starter Kits' | 'Archival Themes' | 'Typography' | 'Export & Present' | 'Canvas & View';
+  category: 'Projects & Files' | 'Pages & Templates' | 'Starter Kits' | 'Archival Themes' | 'Typography' | 'Export & Present' | 'Canvas & View';
   title: string;
   subtitle?: string;
   shortcut?: string;

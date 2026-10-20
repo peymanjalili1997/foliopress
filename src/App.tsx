@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Command,
@@ -14,7 +15,10 @@ import {
   Download,
   Eye,
   FilePlus,
+  Files,
+  Folder,
   FolderOpen,
+  FolderPlus,
   GripVertical,
   Layers,
   LayoutGrid,
@@ -36,6 +40,7 @@ import { InspectorSidebar, InspectorTab } from './components/InspectorSidebar';
 import { PageCanvas } from './components/PageCanvas';
 import { PdfExportModal } from './components/PdfExportModal';
 import { PresentationView } from './components/PresentationView';
+import { ProjectsManagerModal } from './components/ProjectsManagerModal';
 import { StarterKitsModal } from './components/StarterKitsModal';
 import { StockLibraryModal } from './components/StockLibraryModal';
 import {
@@ -58,47 +63,143 @@ import {
   PageSizeId,
   PageTemplateId,
   PortfolioBlock,
+  PortfolioDocument,
   PortfolioPage,
   TextStyle,
   TextTargetField,
 } from './types/portfolio';
 import { loadGoogleFont } from './utils/googleFonts';
 
-const STORAGE_KEY = 'foliopress_portfolio_state_v1';
+const STORAGE_KEY_V1 = 'foliopress_portfolio_state_v1';
+const STORAGE_KEY_DOCS = 'foliopress_documents_v2';
+const STORAGE_KEY_ACTIVE_DOC_ID = 'foliopress_active_doc_id_v2';
 
-export default function App() {
-  const [pages, setPages] = useState<PortfolioPage[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed.pages) && parsed.pages.length > 0) {
-          return parsed.pages.map((p: any) => ({
+function loadInitialDocuments(): PortfolioDocument[] {
+  try {
+    const savedDocsStr = localStorage.getItem(STORAGE_KEY_DOCS);
+    if (savedDocsStr) {
+      const parsed = JSON.parse(savedDocsStr);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((doc: any, docIdx: number) => ({
+          id: doc.id || `doc-${Date.now()}-${docIdx}`,
+          name: doc.name || `Portfolio Document ${docIdx + 1}`,
+          createdAt: typeof doc.createdAt === 'number' ? doc.createdAt : Date.now(),
+          updatedAt: typeof doc.updatedAt === 'number' ? doc.updatedAt : Date.now(),
+          pages:
+            Array.isArray(doc.pages) && doc.pages.length > 0
+              ? doc.pages.map((p: any) => ({
+                  ...p,
+                  blocks: Array.isArray(p.blocks) ? p.blocks : [],
+                }))
+              : INITIAL_PAGES,
+          globalSettings: {
+            ...INITIAL_GLOBAL_SETTINGS,
+            ...(doc.globalSettings || {}),
+          },
+        }));
+      }
+    }
+  } catch {
+    // Ignore parse error
+  }
+
+  // Fallback migration from legacy v1 single-doc state
+  try {
+    const savedLegacyStr = localStorage.getItem(STORAGE_KEY_V1);
+    if (savedLegacyStr) {
+      const parsed = JSON.parse(savedLegacyStr);
+      if (Array.isArray(parsed.pages) && parsed.pages.length > 0) {
+        const legacyDoc: PortfolioDocument = {
+          id: 'doc-archival-main',
+          name: 'Archival Portfolio & Monograph',
+          createdAt: Date.now() - 86400000,
+          updatedAt: Date.now(),
+          pages: parsed.pages.map((p: any) => ({
             ...p,
             blocks: Array.isArray(p.blocks) ? p.blocks : [],
-          }));
-        }
+          })),
+          globalSettings: {
+            ...INITIAL_GLOBAL_SETTINGS,
+            ...(parsed.globalSettings || {}),
+          },
+        };
+        return [legacyDoc];
       }
-    } catch {
-      // Ignore storage error
     }
-    return INITIAL_PAGES;
-  });
+  } catch {
+    // Ignore parse error
+  }
 
-  const [globalSettings, setGlobalSettings] = useState<GlobalDocumentSettings>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.globalSettings) {
-          return { ...INITIAL_GLOBAL_SETTINGS, ...parsed.globalSettings };
-        }
-      }
-    } catch {
-      // Ignore storage error
+  return [
+    {
+      id: 'doc-primary-1',
+      name: 'Selected Works & Case Studies',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      pages: INITIAL_PAGES,
+      globalSettings: INITIAL_GLOBAL_SETTINGS,
+    },
+  ];
+}
+
+function loadInitialActiveDocId(docs: PortfolioDocument[]): string {
+  try {
+    const savedId = localStorage.getItem(STORAGE_KEY_ACTIVE_DOC_ID);
+    if (savedId && docs.some((d) => d.id === savedId)) {
+      return savedId;
     }
-    return INITIAL_GLOBAL_SETTINGS;
-  });
+  } catch {
+    // Ignore storage error
+  }
+  return docs[0]?.id || 'doc-primary-1';
+}
+
+export default function App() {
+  const [documents, setDocuments] = useState<PortfolioDocument[]>(loadInitialDocuments);
+  const [activeDocId, setActiveDocId] = useState<string>(() => loadInitialActiveDocId(documents));
+  const [isProjectsModalOpen, setIsProjectsModalOpen] = useState<boolean>(false);
+
+  const activeDoc =
+    documents.find((d) => d.id === activeDocId) ||
+    documents[0] || {
+      id: 'doc-fallback',
+      name: 'Untitled Portfolio',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      pages: INITIAL_PAGES,
+      globalSettings: INITIAL_GLOBAL_SETTINGS,
+    };
+
+  const pages = activeDoc.pages;
+  const globalSettings = activeDoc.globalSettings;
+
+  const setPages = (action: React.SetStateAction<PortfolioPage[]>) => {
+    setDocuments((prevDocs) =>
+      prevDocs.map((doc) => {
+        if (doc.id !== activeDocId) return doc;
+        const nextPages = typeof action === 'function' ? action(doc.pages) : action;
+        return {
+          ...doc,
+          pages: nextPages,
+          updatedAt: Date.now(),
+        };
+      })
+    );
+  };
+
+  const setGlobalSettings = (action: React.SetStateAction<GlobalDocumentSettings>) => {
+    setDocuments((prevDocs) =>
+      prevDocs.map((doc) => {
+        if (doc.id !== activeDocId) return doc;
+        const nextSettings = typeof action === 'function' ? action(doc.globalSettings) : action;
+        return {
+          ...doc,
+          globalSettings: nextSettings,
+          updatedAt: Date.now(),
+        };
+      })
+    );
+  };
 
   const [activePageId, setActivePageId] = useState<string>(() => pages[0]?.id || 'page-1');
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
@@ -173,14 +274,196 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [historyIndex, history]);
 
-  // Auto-persist to localStorage
+  // Auto-persist documents and activeDocId to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ pages, globalSettings }));
+      localStorage.setItem(STORAGE_KEY_DOCS, JSON.stringify(documents));
+      localStorage.setItem(STORAGE_KEY_ACTIVE_DOC_ID, activeDocId);
+      if (activeDoc) {
+        localStorage.setItem(
+          STORAGE_KEY_V1,
+          JSON.stringify({ pages: activeDoc.pages, globalSettings: activeDoc.globalSettings })
+        );
+      }
     } catch {
       // Ignore quota errors if large custom images are uploaded
     }
-  }, [pages, globalSettings]);
+  }, [documents, activeDocId, activeDoc]);
+
+  // Project / Document Action Handlers
+  const handleSelectDocument = (docId: string) => {
+    const target = documents.find((d) => d.id === docId);
+    if (!target) return;
+    setActiveDocId(docId);
+    setActivePageId(target.pages[0]?.id || 'page-1');
+    setSelectedBlockId(target.pages[0]?.blocks?.[0]?.id || null);
+    setHistory([target.pages]);
+    setHistoryIndex(0);
+    setIsProjectsModalOpen(false);
+  };
+
+  const handleCreateDocument = (
+    name?: string,
+    templatePages?: PortfolioPage[],
+    templateSettings?: GlobalDocumentSettings
+  ) => {
+    const newDocId = createUid('doc');
+    const initialPages: PortfolioPage[] =
+      templatePages && templatePages.length > 0
+        ? templatePages.map((p, pIdx) => ({
+            ...p,
+            id: createUid(`p-${pIdx + 1}`),
+            blocks: (p.blocks || []).map((b, bIdx) => ({
+              ...b,
+              id: createUid(`b-${pIdx + 1}-${bIdx + 1}`),
+            })),
+          }))
+        : [
+            {
+              id: createUid('p-1'),
+              title: 'Cover Page',
+              sectionLabel: '01 · COVER',
+              templateId: 'cover-monograph',
+              hideHeader: true,
+              hideFooter: false,
+              blocks: createBlocksForTemplate(
+                'cover-monograph',
+                templateSettings?.headingFont || INITIAL_GLOBAL_SETTINGS.headingFont,
+                templateSettings?.bodyFont || INITIAL_GLOBAL_SETTINGS.bodyFont,
+                templateSettings?.monoFont || INITIAL_GLOBAL_SETTINGS.monoFont
+              ),
+            },
+          ];
+
+    const newDoc: PortfolioDocument = {
+      id: newDocId,
+      name: name || `Untitled Portfolio ${documents.length + 1}`,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      pages: initialPages,
+      globalSettings: templateSettings
+        ? { ...INITIAL_GLOBAL_SETTINGS, ...templateSettings }
+        : { ...INITIAL_GLOBAL_SETTINGS },
+    };
+
+    setDocuments((prev) => [newDoc, ...prev]);
+    setActiveDocId(newDoc.id);
+    setActivePageId(newDoc.pages[0]?.id || 'page-1');
+    setSelectedBlockId(newDoc.pages[0]?.blocks?.[0]?.id || null);
+    setHistory([newDoc.pages]);
+    setHistoryIndex(0);
+    setIsProjectsModalOpen(false);
+  };
+
+  const handleDuplicateDocument = (docId: string) => {
+    const target = documents.find((d) => d.id === docId);
+    if (!target) return;
+    const clonedPages: PortfolioPage[] = target.pages.map((p, pIdx) => ({
+      ...p,
+      id: createUid(`dp-${pIdx + 1}`),
+      blocks: (p.blocks || []).map((b, bIdx) => ({
+        ...b,
+        id: createUid(`db-${pIdx + 1}-${bIdx + 1}`),
+      })),
+    }));
+
+    const newDoc: PortfolioDocument = {
+      id: createUid('doc'),
+      name: `${target.name} (Copy)`,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      pages: clonedPages,
+      globalSettings: { ...target.globalSettings },
+    };
+
+    setDocuments((prev) => [newDoc, ...prev]);
+    setActiveDocId(newDoc.id);
+    setActivePageId(newDoc.pages[0]?.id || 'page-1');
+    setSelectedBlockId(newDoc.pages[0]?.blocks?.[0]?.id || null);
+    setHistory([newDoc.pages]);
+    setHistoryIndex(0);
+  };
+
+  const handleRenameDocument = (docId: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === docId ? { ...doc, name: trimmed, updatedAt: Date.now() } : doc
+      )
+    );
+  };
+
+  const handleDeleteDocument = (docId: string) => {
+    if (documents.length <= 1) {
+      alert('You must keep at least one portfolio document.');
+      return;
+    }
+    const remaining = documents.filter((d) => d.id !== docId);
+    setDocuments(remaining);
+    if (activeDocId === docId) {
+      const nextDoc = remaining[0];
+      setActiveDocId(nextDoc.id);
+      setActivePageId(nextDoc.pages[0]?.id || 'page-1');
+      setSelectedBlockId(nextDoc.pages[0]?.blocks?.[0]?.id || null);
+      setHistory([nextDoc.pages]);
+      setHistoryIndex(0);
+    }
+  };
+
+  const handleExportDocumentJson = (docId: string) => {
+    const doc = documents.find((d) => d.id === docId);
+    if (!doc) return;
+    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = (doc.name || 'portfolio').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    a.download = `${safeName}_foliopress.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportDocumentJson = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        if (Array.isArray(parsed.pages) && parsed.pages.length > 0) {
+          const sanitizedPages: PortfolioPage[] = parsed.pages.map((p: any, pIdx: number) => ({
+            ...p,
+            id: p.id || createUid(`imp-${pIdx + 1}`),
+            blocks: Array.isArray(p.blocks) ? p.blocks : [],
+          }));
+          const newDoc: PortfolioDocument = {
+            id: createUid('doc'),
+            name: parsed.name
+              ? `${parsed.name} (Imported)`
+              : `Imported Portfolio ${documents.length + 1}`,
+            createdAt: typeof parsed.createdAt === 'number' ? parsed.createdAt : Date.now(),
+            updatedAt: Date.now(),
+            pages: sanitizedPages,
+            globalSettings: {
+              ...INITIAL_GLOBAL_SETTINGS,
+              ...(parsed.globalSettings || {}),
+            },
+          };
+          setDocuments((prev) => [newDoc, ...prev]);
+          setActiveDocId(newDoc.id);
+          setActivePageId(newDoc.pages[0]?.id || 'page-1');
+          setSelectedBlockId(newDoc.pages[0]?.blocks?.[0]?.id || null);
+          setHistory([newDoc.pages]);
+          setHistoryIndex(0);
+          setIsProjectsModalOpen(false);
+        }
+      } catch {
+        alert('Invalid or corrupted JSON portfolio document file.');
+      }
+    };
+    reader.readAsText(file);
+  };
 
   // Dynamic Google Fonts Auto-Loader for loaded portfolio and active pages
   useEffect(() => {
@@ -919,7 +1202,7 @@ export default function App() {
     }));
   };
 
-  const handleApplyStarterKit = (kit: StarterKit) => {
+  const handleApplyStarterKit = (kit: StarterKit, asNewDocument = false) => {
     if (!kit || !kit.pages || kit.pages.length === 0) return;
     const clonedPages: PortfolioPage[] = JSON.parse(JSON.stringify(kit.pages)).map(
       (p: PortfolioPage, pIdx: number) => ({
@@ -932,18 +1215,23 @@ export default function App() {
       })
     );
     const nextSettings: GlobalDocumentSettings = {
-      ...globalSettings,
+      ...INITIAL_GLOBAL_SETTINGS,
       pageSize: kit.pageSize,
       portfolioTitle: kit.name,
       headerLeftText: kit.name,
       footerLeftText: kit.name,
       ...(kit.globalSettings || {}),
     };
-    setPages(clonedPages);
-    setGlobalSettings(nextSettings);
-    pushHistory(clonedPages);
-    setActivePageId(clonedPages[0]?.id || 'page-1');
-    setSelectedBlockId(clonedPages[0]?.blocks?.[0]?.id || null);
+
+    if (asNewDocument) {
+      handleCreateDocument(kit.name, clonedPages, nextSettings);
+    } else {
+      setPages(clonedPages);
+      setGlobalSettings(nextSettings);
+      pushHistory(clonedPages);
+      setActivePageId(clonedPages[0]?.id || 'page-1');
+      setSelectedBlockId(clonedPages[0]?.blocks?.[0]?.id || null);
+    }
     setIsStarterKitsModalOpen(false);
   };
 
@@ -1073,6 +1361,30 @@ export default function App() {
   };
 
   const commandItems: CommandItem[] = [
+    {
+      id: 'cmd-all-projects',
+      category: 'Projects & Files',
+      title: 'Portfolio Projects & Documents Manager',
+      subtitle: `Browse, switch, duplicate, or export from ${documents.length} files`,
+      icon: Files,
+      action: () => setIsProjectsModalOpen(true),
+    },
+    {
+      id: 'cmd-new-project',
+      category: 'Projects & Files',
+      title: 'Create New Portfolio Document',
+      subtitle: 'Start an independent clean portfolio document file',
+      icon: FolderPlus,
+      action: () => handleCreateDocument(),
+    },
+    {
+      id: 'cmd-duplicate-project',
+      category: 'Projects & Files',
+      title: 'Duplicate Active Portfolio Document',
+      subtitle: `Clone "${activeDoc?.name || 'Portfolio'}" as a new file`,
+      icon: Copy,
+      action: () => handleDuplicateDocument(activeDocId),
+    },
     {
       id: 'cmd-export-pdf',
       category: 'Export & Present',
@@ -1213,18 +1525,34 @@ export default function App() {
     <div dir="ltr" className="h-screen w-screen overflow-hidden flex flex-col bg-[#F1F0EC] text-stone-900">
       {/* STRICT 3-ZONE TOP BAR CONTRACT */}
       <header className="h-14 bg-white border-b border-stone-200/90 px-6 flex items-center justify-between gap-8 shrink-0 no-print">
-        {/* Zone 1: Single text element wordmark */}
-        <a
-          href="#studio"
-          onClick={(e) => {
-            e.preventDefault();
-            setWorkspaceMode('single');
-          }}
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
-          className="text-2xl font-semibold tracking-tight text-stone-950 whitespace-nowrap shrink-0"
-        >
-          FolioPress
-        </a>
+        {/* Zone 1: Single text element wordmark + Active Portfolio Document Switcher */}
+        <div className="flex items-center gap-3 shrink-0">
+          <a
+            href="#studio"
+            onClick={(e) => {
+              e.preventDefault();
+              setWorkspaceMode('single');
+            }}
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
+            className="text-2xl font-semibold tracking-tight text-stone-950 whitespace-nowrap shrink-0"
+          >
+            FolioPress
+          </a>
+
+          {/* Active Portfolio Project Switcher Pill */}
+          <button
+            type="button"
+            onClick={() => setIsProjectsModalOpen(true)}
+            className="flex items-center gap-2 px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200/80 active:bg-stone-200 border border-stone-200/90 rounded-lg text-xs transition-colors group cursor-pointer max-w-[210px]"
+            title="Switch or manage portfolio documents (Files)"
+          >
+            <Folder className="w-3.5 h-3.5 text-stone-600 shrink-0 group-hover:text-amber-600 transition-colors" />
+            <span className="font-medium text-stone-800 truncate text-left">
+              {activeDoc?.name || 'Untitled Portfolio'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-stone-400 shrink-0 group-hover:text-stone-600" />
+          </button>
+        </div>
 
         {/* Zone 2: 4 concise single-line text navigation links */}
         <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-stone-600">
@@ -1393,6 +1721,29 @@ export default function App() {
         {/* LEFT SIDEBAR: Page-by-Page Manager & Reordering */}
         {workspaceMode !== 'preview' && (
           <aside className="w-64 bg-white border-r border-stone-200/90 flex flex-col h-full shrink-0 select-none">
+            {/* Active Document Quick Switcher Bar */}
+            <div className="px-3.5 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setIsProjectsModalOpen(true)}
+                className="flex items-center gap-1.5 min-w-0 text-left group cursor-pointer"
+                title="Open Projects & Documents Manager"
+              >
+                <Folder className="w-3.5 h-3.5 text-stone-500 group-hover:text-amber-600 shrink-0 transition-colors" />
+                <span className="text-xs font-semibold text-stone-800 group-hover:text-stone-950 truncate max-w-[130px]">
+                  {activeDoc?.name || 'My Portfolio'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsProjectsModalOpen(true)}
+                className="px-2 py-0.5 text-[10px] font-semibold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded shadow-2xs transition-colors shrink-0 cursor-pointer"
+                title="Manage All Portfolio Documents"
+              >
+                {documents.length} {documents.length === 1 ? 'Doc' : 'Docs'}
+              </button>
+            </div>
+
             <div className="p-3.5 border-b border-stone-200 flex items-center justify-between">
               <div>
                 <h2 className="text-xs font-semibold text-stone-900">Portfolio Pages</h2>
@@ -1876,6 +2227,22 @@ export default function App() {
           />
         )}
       </div>
+
+      {/* Portfolio Projects & Documents Manager Modal */}
+      <ProjectsManagerModal
+        isOpen={isProjectsModalOpen}
+        onClose={() => setIsProjectsModalOpen(false)}
+        documents={documents}
+        activeDocId={activeDocId}
+        onSelectDocument={handleSelectDocument}
+        onCreateDocument={handleCreateDocument}
+        onDuplicateDocument={handleDuplicateDocument}
+        onRenameDocument={handleRenameDocument}
+        onDeleteDocument={handleDeleteDocument}
+        onExportDocumentJson={handleExportDocumentJson}
+        onImportDocumentJson={handleImportDocumentJson}
+        onOpenStarterKits={() => setIsStarterKitsModalOpen(true)}
+      />
 
       {/* 1-Click Multi-Page Starter Kits Modal */}
       <StarterKitsModal

@@ -5,7 +5,7 @@ import { STARTER_KITS, StarterKit } from '../data/starterKits';
 interface StarterKitsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApplyKit: (kit: StarterKit) => void;
+  onApplyKit: (kit: StarterKit, asNewDocument?: boolean) => void;
 }
 
 export const StarterKitsModal: React.FC<StarterKitsModalProps> = ({
@@ -102,20 +102,36 @@ export const StarterKitsModal: React.FC<StarterKitsModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Apply Button */}
-                  <div className="pt-4 mt-4 border-t border-stone-100 flex items-center justify-between">
-                    <span className="text-[11px] text-stone-400">Replaces current draft</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onApplyKit(kit);
-                        onClose();
-                      }}
-                      className="px-3.5 py-1.5 text-xs font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-lg transition-all flex items-center gap-1.5 shadow-xs"
-                    >
-                      <span>Load Kit</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Action Buttons */}
+                  <div className="pt-4 mt-4 border-t border-stone-100 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-stone-400">
+                      {kit.pages.length} curated pages
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onApplyKit(kit, true);
+                          onClose();
+                        }}
+                        className="px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg transition-all flex items-center gap-1 shadow-2xs"
+                        title="Create as an independent new portfolio project"
+                      >
+                        <span>+ New Portfolio</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onApplyKit(kit, false);
+                          onClose();
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-lg transition-all flex items-center gap-1.5 shadow-xs"
+                        title="Replace current pages with this starter kit"
+                      >
+                        <span>Load Here</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
