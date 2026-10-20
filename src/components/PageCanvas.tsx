@@ -266,7 +266,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
   ) => {
     if (isExportMode) {
       return (
-        <div style={style} className="whitespace-pre-wrap break-words">
+        <div style={style} className="w-full whitespace-pre-wrap break-words">
           {value}
         </div>
       );
@@ -424,17 +424,9 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         const isBlockSelected = !isExportMode && selectedBlockId === block.id;
 
         const kickerStyle = buildTextCss(
-          block.kickerTextStyle || {
-            fontFamily: globalSettings.monoFont,
-            fontSize: 10.5,
-            fontWeight: 500,
-            fontStyle: 'normal',
-            textDecoration: 'none',
-            letterSpacing: 0.12,
-            textTransform: 'uppercase',
-            color: accentCol,
-            lineHeight: 1.4,
+          {
             textAlign: block.textStyle?.textAlign || 'left',
+            ...block.kickerTextStyle,
           },
           accentCol
         );
@@ -442,23 +434,15 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         const headlineStyle = buildTextCss(block.textStyle, pageInk);
 
         const subtitleStyle = buildTextCss(
-          block.secondaryTextStyle || {
-            fontFamily: globalSettings.bodyFont,
-            fontSize: 14,
-            fontWeight: 400,
-            fontStyle: 'normal',
-            textDecoration: 'none',
-            lineHeight: 1.55,
-            letterSpacing: 0,
-            textTransform: 'none',
-            color: mutedInk,
+          {
             textAlign: block.textStyle?.textAlign || 'left',
+            ...block.secondaryTextStyle,
           },
           mutedInk
         );
 
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 w-full">
             {(block.kicker !== undefined || !isExportMode) &&
               (!isExportMode || (block.kicker && block.kicker.trim().length > 0)) && (
                 <div
@@ -469,7 +453,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                       onSelectTextTarget?.('kicker');
                     }
                   }}
-                  className={`transition-all rounded-xs ${
+                  className={`w-full transition-all rounded-xs ${
                     isBlockSelected && activeTextTarget === 'kicker'
                       ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
                       : ''
@@ -497,7 +481,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                   onSelectTextTarget?.('primary');
                 }
               }}
-              className={`transition-all rounded-xs ${
+              className={`w-full transition-all rounded-xs ${
                 isBlockSelected && activeTextTarget === 'primary'
                   ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
                   : ''
@@ -526,7 +510,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                       onSelectTextTarget?.('secondary');
                     }
                   }}
-                  className={`pt-0.5 max-w-2xl transition-all rounded-xs ${
+                  className={`pt-0.5 w-full transition-all rounded-xs ${
                     isBlockSelected && activeTextTarget === 'secondary'
                       ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
                       : ''

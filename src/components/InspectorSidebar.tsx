@@ -1,5 +1,9 @@
 import React, { useRef, useState } from 'react';
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Check,
   FilePlus2,
   Grid,
@@ -649,8 +653,33 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                     </div>
                   </div>
 
-                  {/* Uppercase & Color */}
-                  <div className="flex items-center justify-between gap-3 pt-1">
+                  {/* Text Alignment & Uppercase */}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center p-0.5 bg-stone-100 rounded-md border border-stone-200/80">
+                      {(
+                        [
+                          { align: 'left', icon: AlignLeft, label: 'Align Left' },
+                          { align: 'center', icon: AlignCenter, label: 'Align Center' },
+                          { align: 'right', icon: AlignRight, label: 'Align Right' },
+                          { align: 'justify', icon: AlignJustify, label: 'Justify' },
+                        ] as const
+                      ).map(({ align, icon: Icon, label }) => (
+                        <button
+                          key={align}
+                          type="button"
+                          title={label}
+                          onClick={() => onUpdateTextStyle({ textAlign: align }, activeTextTarget)}
+                          className={`w-7 h-6 flex items-center justify-center rounded transition-colors ${
+                            (activeStyle.textAlign || 'left') === align
+                              ? 'bg-stone-900 text-white shadow-2xs'
+                              : 'text-stone-700 hover:bg-white/70'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                        </button>
+                      ))}
+                    </div>
+
                     <button
                       type="button"
                       onClick={() =>
@@ -671,33 +700,34 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                       <span className="font-mono text-[10px] uppercase font-bold tracking-wider">AA</span>
                       <span>ALL CAPS</span>
                     </button>
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-stone-500">Color</span>
-                      <div className="flex items-center gap-1">
-                        {['#1c1917', '#44403c', '#78716c', '#2563eb', '#b45309'].map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => onUpdateTextStyle({ color: c }, activeTextTarget)}
-                            style={{ backgroundColor: c }}
-                            className={`w-5 h-5 rounded-full border transition-all ${
-                              activeStyle.color === c
-                                ? 'ring-2 ring-stone-900 ring-offset-1 scale-110'
-                                : 'border-stone-300 hover:scale-105'
-                            }`}
-                          />
-                        ))}
-                        <input
-                          type="color"
-                          value={activeStyle.color || '#1c1917'}
-                          onChange={(e) =>
-                            onUpdateTextStyle({ color: e.target.value }, activeTextTarget)
-                          }
-                          className="w-6 h-6 p-0 border border-stone-200 rounded cursor-pointer ml-1"
-                          title="Custom Color"
+                  {/* Text Color Row */}
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-stone-500">Color Palette</span>
+                    <div className="flex items-center gap-1">
+                      {['#1c1917', '#44403c', '#78716c', '#2563eb', '#b45309'].map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => onUpdateTextStyle({ color: c }, activeTextTarget)}
+                          style={{ backgroundColor: c }}
+                          className={`w-5 h-5 rounded-full border transition-all ${
+                            activeStyle.color === c
+                              ? 'ring-2 ring-stone-900 ring-offset-1 scale-110'
+                              : 'border-stone-300 hover:scale-105'
+                          }`}
                         />
-                      </div>
+                      ))}
+                      <input
+                        type="color"
+                        value={activeStyle.color || '#1c1917'}
+                        onChange={(e) =>
+                          onUpdateTextStyle({ color: e.target.value }, activeTextTarget)
+                        }
+                        className="w-6 h-6 p-0 border border-stone-200 rounded cursor-pointer ml-1"
+                        title="Custom Color"
+                      />
                     </div>
                   </div>
 
