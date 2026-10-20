@@ -65,12 +65,30 @@ export type BlockType =
   | 'before-after'
   | 'qr-code'
   | 'project-meta'
-  | 'multi-photo-grid';
+  | 'multi-photo-grid'
+  | 'client-testimonial'
+  | 'process-steps'
+  | 'services-grid';
 
 export interface SpecItem {
   id: string;
   label: string;
   value: string;
+}
+
+export interface ProcessStepItem {
+  id: string;
+  stepNumber: string;
+  title: string;
+  description: string;
+}
+
+export interface ServiceOfferItem {
+  id: string;
+  number: string;
+  title: string;
+  description: string;
+  tags?: string[];
 }
 
 export interface ColorSwatch {
@@ -135,6 +153,18 @@ export interface PortfolioBlock {
   // Multi-Photo Grid
   gridImages?: GridImageItem[];
   gridColumns?: 2 | 3 | 4;
+  // Client Testimonial & Review
+  clientName?: string;
+  clientRole?: string;
+  clientCompany?: string;
+  clientAvatarUrl?: string;
+  clientRating?: number; // 1 to 5
+  testimonialVerified?: boolean;
+  isNdaProtected?: boolean;
+  // Process & Methodology Steps
+  processSteps?: ProcessStepItem[];
+  // Service Offerings Grid
+  serviceOffers?: ServiceOfferItem[];
 }
 
 export type PageTemplateId =
@@ -149,7 +179,9 @@ export type PageTemplateId =
   | 'photo-lookbook'
   | 'contact-qr'
   | 'cover-landscape'
-  | 'before-after-spread';
+  | 'before-after-spread'
+  | 'case-study-6step'
+  | 'story-services-intro';
 
 export interface PortfolioPage {
   id: string;

@@ -17,6 +17,96 @@ export interface StarterKit {
 
 export const STARTER_KITS: StarterKit[] = [
   {
+    id: 'global-case-study',
+    name: 'Global 6-Part Case Study Kit',
+    subtitle: 'High-Converting International Freelance Standard',
+    badge: '4 Pages · A4 Landscape',
+    orientation: 'landscape',
+    pageSize: 'a4-landscape',
+    pageCount: 4,
+    description:
+      'Engineered specifically for winning international freelance & studio commissions: includes Landscape Hero, Story & 3-Column Services Matrix, Full 6-Part Client Case Study, and Before/After deliverables with verified testimonials.',
+    themeId: 'swiss-minimal',
+    globalSettings: {
+      pageSize: 'a4-landscape',
+      themeId: 'swiss-minimal',
+      backgroundColor: '#FFFFFF',
+      textColor: '#111827',
+      mutedTextColor: '#6B7280',
+      accentColor: '#B45309',
+      borderColor: '#E5E7EB',
+      headingFont: "'Plus Jakarta Sans', -apple-system, sans-serif",
+      bodyFont: "'Plus Jakarta Sans', -apple-system, sans-serif",
+      monoFont: "'JetBrains Mono', monospace",
+      pageMargin: 48,
+      headerLeftText: 'PEYMAN JALILI · GLOBAL CLIENT CASE STUDIES',
+      headerRightText: 'SELECTED COMMISSIONS 2026',
+      footerLeftText: 'CONFIDENTIAL WORK SAMPLES · ALL RIGHTS RESERVED',
+    },
+    pages: [
+      {
+        id: 'kit-gcs-p1',
+        title: 'Landscape Title Sheet',
+        sectionLabel: '01 · Project Overview',
+        templateId: 'cover-landscape',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: true,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'cover-landscape',
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-gcs-p2',
+        title: 'Story, Vision & Service Matrix',
+        sectionLabel: '02 · Studio Capabilities',
+        templateId: 'story-services-intro',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'story-services-intro',
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-gcs-p3',
+        title: '6-Part In-Depth Client Case Study',
+        sectionLabel: '03 · Flagship Project',
+        templateId: 'case-study-6step',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'case-study-6step',
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-gcs-p4',
+        title: 'Deliverables & Before / After',
+        sectionLabel: '04 · Transformation Proof',
+        templateId: 'before-after-spread',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'before-after-spread',
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+    ],
+  },
+  {
     id: 'architecture-monograph',
     name: 'Architectural Monograph',
     subtitle: 'Minimalist Travertine & Spatial Volume',

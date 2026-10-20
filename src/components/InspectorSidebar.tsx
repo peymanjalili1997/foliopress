@@ -4,18 +4,23 @@ import {
   AlignJustify,
   AlignLeft,
   AlignRight,
+  Briefcase,
   Check,
   FilePlus2,
   Grid,
   Image as ImageIcon,
   Layers,
   LayoutTemplate,
+  ListOrdered,
   Palette,
   Plus,
+  Quote,
   RefreshCw,
   Search,
+  ShieldCheck,
   Sliders,
   Sparkles,
+  Star,
   Trash2,
   Type,
   Upload,
@@ -540,6 +545,101 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                           <span>Browse Architectural Stock Library</span>
                         </button>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Client Testimonial Inspector */}
+                {selectedBlock.type === 'client-testimonial' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                      <Quote className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Client Testimonial Settings</span>
+                    </h3>
+
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Client Name</label>
+                      <input
+                        type="text"
+                        value={selectedBlock.clientName || ''}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { clientName: e.target.value })}
+                        placeholder="e.g. Dr. Elena Rostova"
+                        className="w-full h-8 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-900"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">Title / Role</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.clientRole || ''}
+                          onChange={(e) => onUpdateBlock(selectedBlock.id, { clientRole: e.target.value })}
+                          placeholder="e.g. Managing Director"
+                          className="w-full h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-stone-500 mb-1">Company</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.clientCompany || ''}
+                          onChange={(e) => onUpdateBlock(selectedBlock.id, { clientCompany: e.target.value })}
+                          placeholder="e.g. Vanguard Trust"
+                          className="w-full h-8 px-2 text-xs bg-stone-50 border border-stone-200 rounded-md text-stone-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Star Rating (1 - 5)</label>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => onUpdateBlock(selectedBlock.id, { clientRating: star })}
+                            className="p-1 hover:scale-110 transition-transform"
+                          >
+                            <Star
+                              className={`w-4 h-4 ${
+                                star <= (selectedBlock.clientRating || 5)
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-stone-300'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-1 flex flex-col gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-700">
+                        <input
+                          type="checkbox"
+                          checked={selectedBlock.testimonialVerified !== false}
+                          onChange={(e) =>
+                            onUpdateBlock(selectedBlock.id, { testimonialVerified: e.target.checked })
+                          }
+                          className="rounded border-stone-300 text-stone-900 focus:ring-0"
+                        />
+                        <span className="flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Show Verified Client Badge</span>
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-700">
+                        <input
+                          type="checkbox"
+                          checked={!!selectedBlock.isNdaProtected}
+                          onChange={(e) =>
+                            onUpdateBlock(selectedBlock.id, { isNdaProtected: e.target.checked })
+                          }
+                          className="rounded border-stone-300 text-stone-900 focus:ring-0"
+                        />
+                        <span>NDA / Confidentiality Protected Badge</span>
+                      </label>
                     </div>
                   </div>
                 )}

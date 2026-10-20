@@ -6,6 +6,7 @@ import {
   AlignRight,
   ArrowLeftRight,
   Bold,
+  Briefcase,
   Columns,
   FileText,
   Grid3X3,
@@ -14,6 +15,8 @@ import {
   Italic,
   Laptop,
   LayoutGrid,
+  ListOrdered,
+  MessageSquareQuote,
   Minus,
   Palette,
   QrCode,
@@ -471,6 +474,36 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
         >
           <Grid3X3 className="w-3.5 h-3.5 text-stone-600" />
           <span>Grid</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onAddBlock('client-testimonial')}
+          title="Add Client Testimonial & Review"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
+        >
+          <MessageSquareQuote className="w-3.5 h-3.5 text-amber-600" />
+          <span>Review</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onAddBlock('process-steps')}
+          title="Add Process & Strategy Steps"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
+        >
+          <ListOrdered className="w-3.5 h-3.5 text-stone-600" />
+          <span>Process</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onAddBlock('services-grid')}
+          title="Add 3-Column Services Offerings Grid"
+          className="px-2 py-1 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
+        >
+          <Briefcase className="w-3.5 h-3.5 text-stone-600" />
+          <span>Services</span>
         </button>
 
         <button

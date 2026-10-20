@@ -529,6 +529,56 @@ export default function App() {
           { id: createUid('img'), url: CURATED_VISUAL_PLATES[3].url, caption: 'Detail C — Axonometric Joinery' },
         ],
       };
+    } else if (type === 'client-testimonial') {
+      newBlock = {
+        ...newBlock,
+        kicker: '06 · VERIFIED CLIENT TESTIMONIAL',
+        text: '"Julian delivered an exceptional spatial design that directly increased our gallery foot traffic by 45%. The collaboration was seamless from initial discovery to final deployment."',
+        clientName: 'Sarah Jenkins',
+        clientRole: 'Managing Director',
+        clientCompany: 'Artisan Heritage Foundation',
+        clientRating: 5,
+        testimonialVerified: true,
+      };
+    } else if (type === 'process-steps') {
+      newBlock = {
+        ...newBlock,
+        kicker: '04 · STRATEGY, PROCESS & METHODOLOGY',
+        processSteps: [
+          { id: createUid('ps'), stepNumber: '01', title: 'Discovery & Audit', description: 'Analyze client needs, constraints, and audit project goals.' },
+          { id: createUid('ps'), stepNumber: '02', title: 'Conceptual Design', description: 'Develop strategic spatial models and iteration prototypes.' },
+          { id: createUid('ps'), stepNumber: '03', title: 'Testing & Refinement', description: 'Validate material feasibility and integrate client feedback.' },
+          { id: createUid('ps'), stepNumber: '04', title: 'Final Handover', description: 'Deliver complete documentation and verified deliverables.' },
+        ],
+      };
+    } else if (type === 'services-grid') {
+      newBlock = {
+        ...newBlock,
+        kicker: 'CORE SERVICES & CAPABILITIES',
+        serviceOffers: [
+          {
+            id: createUid('so'),
+            number: '01',
+            title: 'Design & Spatial Architecture',
+            description: 'Full-service conceptual architecture, planning, and permit documentation.',
+            tags: ['Planning', 'Schematic Design'],
+          },
+          {
+            id: createUid('so'),
+            number: '02',
+            title: 'Interior Direction & Styling',
+            description: 'Custom joinery specification, material sourcing, and lighting plans.',
+            tags: ['Joinery', 'Materiality'],
+          },
+          {
+            id: createUid('so'),
+            number: '03',
+            title: 'Visual Renders & Animation',
+            description: 'High-end 4K architectural plates, cinematic lighting, and VR assets.',
+            tags: ['4K Plates', 'Simulation'],
+          },
+        ],
+      };
     }
 
     setPages((prev) => {

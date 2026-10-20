@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowLeftRight,
   ArrowUp,
+  CheckCircle2,
   Copy,
   ExternalLink,
   ImagePlus,
@@ -11,8 +12,11 @@ import {
   Palette,
   Plus,
   QrCode,
+  Quote,
+  ShieldCheck,
   Smartphone,
   Sparkles,
+  Star,
   Tablet,
   Trash2,
   Upload,
@@ -26,6 +30,8 @@ import {
   ImageFilterType,
   PortfolioBlock,
   PortfolioPage,
+  ProcessStepItem,
+  ServiceOfferItem,
   SpecItem,
   TextStyle,
   TextTargetField,
@@ -1658,6 +1664,443 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     },
                     'Detail caption...',
                     false
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case 'client-testimonial': {
+        const rating = block.clientRating || 5;
+        const name = block.clientName || 'Dr. Elena Rostova';
+        const role = block.clientRole || 'Executive Director & Board Trustee';
+        const company = block.clientCompany || 'Vanguard Cultural Trust';
+        const quoteText =
+          block.text ||
+          '"The project exceeded our expectations in acoustic performance and heritage sensitivity. Julian and his team delivered an iconic civic space on schedule."';
+        const kicker = block.kicker || '06 · VERIFIED CLIENT TESTIMONIAL';
+        const isBlockSelected = !isExportMode && selectedBlockId === block.id;
+
+        return (
+          <div
+            style={{
+              borderColor: borderCol,
+              backgroundColor: isExportMode ? 'transparent' : 'rgba(0,0,0,0.015)',
+            }}
+            className="p-5 border rounded-lg space-y-3 relative group/testimonial"
+          >
+            {/* Top row: Kicker + Star Rating + Verified Badge */}
+            <div className="flex items-center justify-between gap-2 border-b pb-2.5" style={{ borderColor: borderCol }}>
+              <div className="flex items-center gap-2">
+                <span
+                  style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                  className="text-[10px] tracking-wider uppercase font-semibold flex items-center gap-1.5"
+                >
+                  <Quote className="w-3 h-3 text-amber-600" />
+                  {renderEditableText(
+                    kicker,
+                    (val) => onUpdateBlock(block.id, { kicker: val }),
+                    {
+                      fontSize: '10px',
+                      fontFamily: globalSettings.monoFont,
+                      letterSpacing: '0.08em',
+                      color: mutedInk,
+                      fontWeight: 600,
+                    },
+                    'TESTIMONIAL LABEL',
+                    false
+                  )}
+                </span>
+                {block.testimonialVerified !== false && (
+                  <span className="inline-flex items-center gap-1 text-[9.5px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <ShieldCheck className="w-2.5 h-2.5" />
+                    <span>Verified Client</span>
+                  </span>
+                )}
+                {block.isNdaProtected && (
+                  <span className="inline-flex items-center gap-1 text-[9.5px] font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    <span>NDA Protected</span>
+                  </span>
+                )}
+              </div>
+
+              {/* 5-Star Rating */}
+              <div className="flex items-center gap-0.5 text-amber-500">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-3.5 h-3.5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-stone-300'}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Quote Body */}
+            <div
+              onClick={(e) => {
+                if (!isExportMode) {
+                  e.stopPropagation();
+                  onSelectBlock(block.id);
+                  onSelectTextTarget?.('primary');
+                }
+              }}
+              className={`transition-all rounded-xs ${
+                isBlockSelected && activeTextTarget === 'primary'
+                  ? 'ring-1 ring-blue-500/70 bg-blue-500/[0.03] p-0.5 -m-0.5'
+                  : ''
+              }`}
+            >
+              {renderEditableText(
+                quoteText,
+                (val) => onUpdateBlock(block.id, { text: val }),
+                buildTextCss(block.textStyle, pageInk),
+                'Enter client review or testimonial quote...',
+                true
+              )}
+            </div>
+
+            {/* Client Signature & Company Attribution */}
+            <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: borderCol }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  style={{ borderColor: borderCol, backgroundColor: '#EAE6DF' }}
+                  className="w-8 h-8 rounded-full border flex items-center justify-center font-mono text-xs font-bold text-stone-700 shrink-0"
+                >
+                  {name.charAt(0) || 'C'}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-xs text-stone-900">
+                    {renderEditableText(
+                      name,
+                      (val) => onUpdateBlock(block.id, { clientName: val }),
+                      {
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: pageInk,
+                      },
+                      'Client Name',
+                      false
+                    )}
+                  </div>
+                  <div className="text-[11px] text-stone-500 flex items-center gap-1.5 flex-wrap">
+                    {renderEditableText(
+                      role,
+                      (val) => onUpdateBlock(block.id, { clientRole: val }),
+                      {
+                        fontSize: '11px',
+                        color: mutedInk,
+                      },
+                      'Role/Title',
+                      false
+                    )}
+                    <span>·</span>
+                    {renderEditableText(
+                      company,
+                      (val) => onUpdateBlock(block.id, { clientCompany: val }),
+                      {
+                        fontSize: '11px',
+                        fontFamily: globalSettings.monoFont,
+                        color: mutedInk,
+                      },
+                      'Company Name',
+                      false
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      case 'process-steps': {
+        const steps: ProcessStepItem[] = block.processSteps || [
+          { id: 'ps-1', stepNumber: '01', title: 'Spatial Audit & LiDAR', description: 'Executed millimeter-precision 3D scans.' },
+          { id: 'ps-2', stepNumber: '02', title: 'Acoustic Simulation', description: 'Engineered algorithmic baffle geometries.' },
+          { id: 'ps-3', stepNumber: '03', title: '1:1 Joinery Mockup', description: 'Fabricated full-scale CNC timber ribs.' },
+          { id: 'ps-4', stepNumber: '04', title: 'Delivery & Commission', description: 'Coordinated phased installation in 18 weeks.' },
+        ];
+        const kicker = block.kicker || '04 · STRATEGY, PROCESS & METHODOLOGY';
+
+        const updateStep = (idx: number, patch: Partial<ProcessStepItem>) => {
+          const next = steps.map((s, i) => (i === idx ? { ...s, ...patch } : s));
+          onUpdateBlock(block.id, { processSteps: next });
+        };
+        const addStep = () => {
+          const num = steps.length + 1 < 10 ? `0${steps.length + 1}` : `${steps.length + 1}`;
+          onUpdateBlock(block.id, {
+            processSteps: [
+              ...steps,
+              {
+                id: createUid('ps'),
+                stepNumber: num,
+                title: 'New Strategy Step',
+                description: 'Describe key methodologies, tools, and execution milestones.',
+              },
+            ],
+          });
+        };
+        const removeStep = (idx: number) => {
+          onUpdateBlock(block.id, { processSteps: steps.filter((_, i) => i !== idx) });
+        };
+
+        return (
+          <div style={{ borderColor: borderCol }} className="py-3 border-t border-b space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span
+                style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                className="text-[10px] tracking-wider uppercase font-semibold"
+              >
+                {renderEditableText(
+                  kicker,
+                  (val) => onUpdateBlock(block.id, { kicker: val }),
+                  {
+                    fontSize: '10px',
+                    fontFamily: globalSettings.monoFont,
+                    color: mutedInk,
+                    letterSpacing: '0.08em',
+                    fontWeight: 600,
+                  },
+                  'PROCESS TITLE',
+                  false
+                )}
+              </span>
+              {!isExportMode && steps.length < 5 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addStep();
+                  }}
+                  className="text-[11px] text-stone-500 hover:text-stone-900 flex items-center gap-1 font-medium"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Step</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {steps.map((step, idx) => (
+                <div
+                  key={step.id || idx}
+                  style={{ borderColor: borderCol }}
+                  className="p-3 bg-stone-100/60 border rounded-lg space-y-1.5 relative group/step"
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      style={{ fontFamily: globalSettings.monoFont, color: globalSettings.accentColor || '#9a3412' }}
+                      className="text-xs font-bold font-mono"
+                    >
+                      {step.stepNumber}
+                    </span>
+                    {!isExportMode && steps.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeStep(idx);
+                        }}
+                        className="opacity-0 group-hover/step:opacity-100 text-stone-400 hover:text-red-500"
+                        title="Remove Step"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="font-semibold text-xs text-stone-900">
+                    {renderEditableText(
+                      step.title,
+                      (val) => updateStep(idx, { title: val }),
+                      {
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        color: pageInk,
+                      },
+                      'Step Title',
+                      false
+                    )}
+                  </div>
+
+                  <div className="text-[11px] text-stone-600 leading-snug">
+                    {renderEditableText(
+                      step.description,
+                      (val) => updateStep(idx, { description: val }),
+                      {
+                        fontSize: '10.5px',
+                        color: mutedInk,
+                        lineHeight: 1.45,
+                      },
+                      'Step Description...',
+                      true
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case 'services-grid': {
+        const offers: ServiceOfferItem[] = block.serviceOffers || [
+          {
+            id: 'so-1',
+            number: '01',
+            title: 'Architectural Design & Planning',
+            description: 'Concept design, site masterplanning, heritage conservation, and full technical permit filing across municipal jurisdictions.',
+            tags: ['Concept Masterplan', 'BIM LOD 350', 'Council Approval'],
+          },
+          {
+            id: 'so-2',
+            number: '02',
+            title: 'Interior Architecture & Joinery',
+            description: 'Custom millwork detailing, bespoke furniture specification, lighting design, and curated mineral material palettes.',
+            tags: ['Custom Joinery', 'Material Schedules', 'FF&E Procurement'],
+          },
+          {
+            id: 'so-3',
+            number: '03',
+            title: '3D Computational Visualization',
+            description: 'Photorealistic architectural visualization, cinematic lighting simulations, VR walkthroughs, and competition renders.',
+            tags: ['4K Visual Plates', 'Shadow Studies', 'VR Presentation'],
+          },
+        ];
+        const kicker = block.kicker || 'PART 02 · CORE SERVICES & SCOPE OF ENGAGEMENT';
+
+        const updateOffer = (idx: number, patch: Partial<ServiceOfferItem>) => {
+          const next = offers.map((o, i) => (i === idx ? { ...o, ...patch } : o));
+          onUpdateBlock(block.id, { serviceOffers: next });
+        };
+        const addOffer = () => {
+          const num = offers.length + 1 < 10 ? `0${offers.length + 1}` : `${offers.length + 1}`;
+          onUpdateBlock(block.id, {
+            serviceOffers: [
+              ...offers,
+              {
+                id: createUid('so'),
+                number: num,
+                title: 'New Service Discipline',
+                description: 'Detailed description of services offered, methodologies, and deliverables.',
+                tags: ['Consultation', 'Deliverables'],
+              },
+            ],
+          });
+        };
+        const removeOffer = (idx: number) => {
+          onUpdateBlock(block.id, { serviceOffers: offers.filter((_, i) => i !== idx) });
+        };
+
+        return (
+          <div style={{ borderColor: borderCol }} className="py-3 border-t border-b space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span
+                style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                className="text-[10px] tracking-wider uppercase font-semibold"
+              >
+                {renderEditableText(
+                  kicker,
+                  (val) => onUpdateBlock(block.id, { kicker: val }),
+                  {
+                    fontSize: '10px',
+                    fontFamily: globalSettings.monoFont,
+                    color: mutedInk,
+                    letterSpacing: '0.08em',
+                    fontWeight: 600,
+                  },
+                  'SERVICES HEADER',
+                  false
+                )}
+              </span>
+              {!isExportMode && offers.length < 4 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addOffer();
+                  }}
+                  className="text-[11px] text-stone-500 hover:text-stone-900 flex items-center gap-1 font-medium"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Service</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {offers.map((offer, idx) => (
+                <div
+                  key={offer.id || idx}
+                  style={{ borderColor: borderCol }}
+                  className="p-3.5 bg-stone-100/50 border rounded-lg space-y-2 relative group/offer flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span
+                        style={{ fontFamily: globalSettings.monoFont, color: globalSettings.accentColor || '#9a3412' }}
+                        className="text-xs font-bold font-mono"
+                      >
+                        {offer.number}
+                      </span>
+                      {!isExportMode && offers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeOffer(idx);
+                          }}
+                          className="opacity-0 group-hover/offer:opacity-100 text-stone-400 hover:text-red-500"
+                          title="Remove Service"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="font-semibold text-xs text-stone-900">
+                      {renderEditableText(
+                        offer.title,
+                        (val) => updateOffer(idx, { title: val }),
+                        {
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: pageInk,
+                        },
+                        'Service Title',
+                        false
+                      )}
+                    </div>
+
+                    <div className="text-[11px] text-stone-600 leading-snug">
+                      {renderEditableText(
+                        offer.description,
+                        (val) => updateOffer(idx, { description: val }),
+                        {
+                          fontSize: '11px',
+                          color: mutedInk,
+                          lineHeight: 1.5,
+                        },
+                        'Service description...',
+                        true
+                      )}
+                    </div>
+                  </div>
+
+                  {offer.tags && offer.tags.length > 0 && (
+                    <div className="pt-2 flex flex-wrap gap-1">
+                      {offer.tags.map((tag, tIdx) => (
+                        <span
+                          key={tIdx}
+                          style={{ fontFamily: globalSettings.monoFont }}
+                          className="text-[9px] bg-white text-stone-700 px-1.5 py-0.5 rounded border border-stone-200"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
