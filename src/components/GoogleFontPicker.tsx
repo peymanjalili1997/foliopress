@@ -91,7 +91,7 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
   };
 
   return (
-    <div ref={containerRef} className={`relative inline-block ${className}`}>
+    <div ref={containerRef} className={`relative block w-full ${className}`}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -113,7 +113,7 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
 
       {/* Real-time Google Fonts Search Popover */}
       {isOpen && (
-        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 w-80 sm:w-96 max-w-[92vw] bg-white border border-stone-200/90 rounded-xl shadow-2xl z-50 p-2.5 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute left-0 right-0 top-full mt-1.5 w-full bg-white border border-stone-200/90 rounded-xl shadow-2xl z-50 p-2.5 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100">
           {/* Search Header */}
           <div className="relative flex items-center">
             <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5" />
@@ -123,7 +123,7 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search 1,900+ Google Fonts (e.g. Poppins, Oswald)..."
+              placeholder="Search 1,900+ Google Fonts..."
               className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 focus:bg-white transition-colors"
             />
             {searchQuery && (
@@ -138,14 +138,14 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
           </div>
 
           {/* Category Filter Pills & Results Count */}
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 p-0.5 bg-stone-100/90 rounded-md text-[10px] shrink-0">
+          <div className="flex items-center justify-between gap-1 text-[10px]">
+            <div className="flex items-center gap-0.5 p-0.5 bg-stone-100/90 rounded-md shrink-0">
               {['All', 'Sans', 'Serif', 'Display', 'Mono'].map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setCategoryFilter(cat)}
-                  className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                  className={`px-1.5 py-0.5 rounded font-medium transition-colors ${
                     categoryFilter === cat
                       ? 'bg-white text-stone-900 shadow-2xs font-semibold'
                       : 'text-stone-600 hover:text-stone-900'
@@ -155,10 +155,10 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
                 </button>
               ))}
             </div>
-            <span className="text-[10px] text-stone-400 tabular-nums truncate">
+            <span className="text-stone-400 tabular-nums truncate text-[9.5px]">
               {searchQuery
                 ? `${matchingFonts.length} match${matchingFonts.length === 1 ? '' : 'es'}`
-                : `${ALL_GOOGLE_FONTS.length.toLocaleString()} Google Fonts`}
+                : `${ALL_GOOGLE_FONTS.length.toLocaleString()} Fonts`}
             </span>
           </div>
 
@@ -172,7 +172,7 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
               <div className="flex items-center gap-1.5 min-w-0 truncate">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                 <span className="truncate">
-                  Load & Set Google Font: <strong>"{searchQuery.trim()}"</strong>
+                  Load Google Font: <strong>"{searchQuery.trim()}"</strong>
                 </span>
               </div>
               <span className="text-[10px] font-mono text-stone-300 bg-stone-800 px-1.5 py-0.5 rounded shrink-0">
@@ -221,13 +221,11 @@ export const GoogleFontPicker: React.FC<GoogleFontPickerProps> = ({
                         )}
                       </div>
                       <div
-                        className={`text-[10px] truncate mt-0.5 flex items-center gap-1.5 ${
+                        className={`text-[10px] truncate mt-0.5 ${
                           isSelected ? 'text-stone-300' : 'text-stone-400'
                         }`}
                       >
-                        <span>{font.category}</span>
-                        <span>·</span>
-                        <span className="opacity-80">Click to apply instantly</span>
+                        {font.category}
                       </div>
                     </div>
                     {isSelected ? (
