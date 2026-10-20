@@ -1,0 +1,343 @@
+import { GlobalDocumentSettings, PageSizeId, PortfolioPage } from '../types/portfolio';
+import { createBlocksForTemplate } from './editorialAssets';
+
+export interface StarterKit {
+  id: string;
+  name: string;
+  subtitle: string;
+  badge: string;
+  orientation: 'portrait' | 'landscape';
+  pageSize: PageSizeId;
+  pageCount: number;
+  description: string;
+  themeId: string;
+  globalSettings: Partial<GlobalDocumentSettings>;
+  pages: PortfolioPage[];
+}
+
+export const STARTER_KITS: StarterKit[] = [
+  {
+    id: 'architecture-monograph',
+    name: 'Architectural Monograph',
+    subtitle: 'Minimalist Travertine & Spatial Volume',
+    badge: '4 Pages · A4 Portrait',
+    orientation: 'portrait',
+    pageSize: 'a4-portrait',
+    pageCount: 4,
+    description:
+      'Complete publication monograph layout featuring a cover sheet, architectural narrative, high-resolution visual plate spread, and project specifications.',
+    themeId: 'warm-archival',
+    globalSettings: {
+      pageSize: 'a4-portrait',
+      themeId: 'warm-archival',
+      backgroundColor: '#FAF8F5',
+      textColor: '#161514',
+      mutedTextColor: '#6E6A64',
+      accentColor: '#9A3412',
+      borderColor: '#E5E0D8',
+      headingFont: "'Cormorant Garamond', Georgia, serif",
+      bodyFont: "'Plus Jakarta Sans', -apple-system, sans-serif",
+      monoFont: "'JetBrains Mono', monospace",
+      pageMargin: 56,
+      headerLeftText: 'STUDIO VANCE · ARCHITECTURAL WORKS',
+      headerRightText: 'MONOGRAPH 2026',
+      footerLeftText: 'ALL RIGHTS RESERVED · CONFIDENTIAL PORTFOLIO',
+    },
+    pages: [
+      {
+        id: 'kit-arch-p1',
+        title: 'Cover Monograph',
+        sectionLabel: '01 · Title Sheet',
+        templateId: 'cover-monograph',
+        hideHeader: true,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'cover-monograph',
+          "'Cormorant Garamond', Georgia, serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-arch-p2',
+        title: 'Concept & Narrative',
+        sectionLabel: '02 · Concept & Site',
+        templateId: 'editorial-split',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'editorial-split',
+          "'Cormorant Garamond', Georgia, serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-arch-p3',
+        title: 'Before & After Transformation',
+        sectionLabel: '03 · Renovation Study',
+        templateId: 'before-after-case',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'before-after-case',
+          "'Cormorant Garamond', Georgia, serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-arch-p4',
+        title: 'Specifications & Gallery',
+        sectionLabel: '04 · Technical Index',
+        templateId: 'photo-grid-dense',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'photo-grid-dense',
+          "'Cormorant Garamond', Georgia, serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+    ],
+  },
+  {
+    id: 'interior-showcase',
+    name: 'Interior Design Showcase',
+    subtitle: 'Nordic Timber, Light & Materiality',
+    badge: '4 Pages · A4 Landscape',
+    orientation: 'landscape',
+    pageSize: 'a4-landscape',
+    pageCount: 4,
+    description:
+      'Spacious landscape portfolio tailored for interior designers, furniture curators, and renovation studios with dual plate spreads and before/after comparisons.',
+    themeId: 'travertine',
+    globalSettings: {
+      pageSize: 'a4-landscape',
+      themeId: 'travertine',
+      backgroundColor: '#F5F2EB',
+      textColor: '#1F1E1B',
+      mutedTextColor: '#706C62',
+      accentColor: '#854D0E',
+      borderColor: '#DDD6C6',
+      headingFont: "'Playfair Display', Georgia, serif",
+      bodyFont: "'Inter', -apple-system, sans-serif",
+      monoFont: "'IBM Plex Mono', monospace",
+      pageMargin: 48,
+      headerLeftText: 'ATELIER LINDQVIST · INTERIORS',
+      headerRightText: 'RESIDENTIAL MONOGRAPH',
+      footerLeftText: 'CURATED MATERIALITY & SPATIAL FORM',
+    },
+    pages: [
+      {
+        id: 'kit-int-p1',
+        title: 'Landscape Title Sheet',
+        sectionLabel: '01 · Project Overview',
+        templateId: 'landscape-cover-hero',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: true,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'landscape-cover-hero',
+          "'Playfair Display', Georgia, serif",
+          "'Inter', -apple-system, sans-serif",
+          "'IBM Plex Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-int-p2',
+        title: 'Material Moodboard Spread',
+        sectionLabel: '02 · Finishes & Palette',
+        templateId: 'dual-plate-study',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'dual-plate-study',
+          "'Playfair Display', Georgia, serif",
+          "'Inter', -apple-system, sans-serif",
+          "'IBM Plex Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-int-p3',
+        title: 'Spatial Transformation',
+        sectionLabel: '03 · Renovation Analysis',
+        templateId: 'landscape-case-study',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'landscape-case-study',
+          "'Playfair Display', Georgia, serif",
+          "'Inter', -apple-system, sans-serif",
+          "'IBM Plex Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-int-p4',
+        title: 'Detail Gallery & Finishes',
+        sectionLabel: '04 · Joinery Index',
+        templateId: 'landscape-photo-quad',
+        pageSizeOverride: 'a4-landscape',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'landscape-photo-quad',
+          "'Playfair Display', Georgia, serif",
+          "'Inter', -apple-system, sans-serif",
+          "'IBM Plex Mono', monospace"
+        ),
+      },
+    ],
+  },
+  {
+    id: 'executive-pitch',
+    name: 'Executive Pitch & Bio',
+    subtitle: 'Concise 2-Page Career Teaser',
+    badge: '2 Pages · Fast Application',
+    orientation: 'portrait',
+    pageSize: 'a4-portrait',
+    pageCount: 2,
+    description:
+      'Ultra-compact two-page portfolio teaser designed for rapid job applications, jury submissions, and firm intros that demand maximum impact in under 2 minutes.',
+    themeId: 'swiss-minimal',
+    globalSettings: {
+      pageSize: 'a4-portrait',
+      themeId: 'swiss-minimal',
+      backgroundColor: '#FFFFFF',
+      textColor: '#0A0A0A',
+      mutedTextColor: '#525252',
+      accentColor: '#DC2626',
+      borderColor: '#E5E5E5',
+      headingFont: "'Plus Jakarta Sans', -apple-system, sans-serif",
+      bodyFont: "'Plus Jakarta Sans', -apple-system, sans-serif",
+      monoFont: "'JetBrains Mono', monospace",
+      pageMargin: 48,
+      headerLeftText: 'PEYMAN JALILI · LEAD ARCHITECT',
+      headerRightText: 'SELECTED WORKS',
+      footerLeftText: 'WWW.FOLIOSTUDIO.ARCH · AVAILABLE FOR COMMISSIONS',
+    },
+    pages: [
+      {
+        id: 'kit-exec-p1',
+        title: 'Executive Cover',
+        sectionLabel: '01 · Overview',
+        templateId: 'cover-monograph',
+        hideHeader: true,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'cover-monograph',
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-exec-p2',
+        title: 'Curated Works & Projects',
+        sectionLabel: '02 · Featured Portfolios',
+        templateId: 'photo-grid-dense',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'photo-grid-dense',
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'Plus Jakarta Sans', -apple-system, sans-serif",
+          "'JetBrains Mono', monospace"
+        ),
+      },
+    ],
+  },
+  {
+    id: 'competition-deck',
+    name: '16:9 Presentation Deck',
+    subtitle: 'Widescreen Slide Monograph',
+    badge: '4 Slides · 16:9 Widescreen',
+    orientation: 'landscape',
+    pageSize: 'deck-16-9',
+    pageCount: 4,
+    description:
+      'Widescreen architectural presentation pitch deck calibrated for client boardroom projectors, virtual meetings, and screen sharing with clean slide indices.',
+    themeId: 'obsidian-night',
+    globalSettings: {
+      pageSize: 'deck-16-9',
+      themeId: 'obsidian-night',
+      backgroundColor: '#0F0E0E',
+      textColor: '#F5F5F4',
+      mutedTextColor: '#A8A29E',
+      accentColor: '#F59E0B',
+      borderColor: '#292524',
+      headingFont: "'Space Grotesk', -apple-system, sans-serif",
+      bodyFont: "'Inter', -apple-system, sans-serif",
+      monoFont: "'Space Mono', monospace",
+      pageMargin: 40,
+      headerLeftText: 'COMPETITION SCHEME · PHASE 02',
+      headerRightText: 'CONFIDENTIAL REVIEW',
+      footerLeftText: 'PRESENTATION DECK · COPYRIGHT 2026',
+    },
+    pages: [
+      {
+        id: 'kit-deck-p1',
+        title: 'Title Slide',
+        sectionLabel: '01 · Project Title',
+        templateId: 'landscape-cover-hero',
+        pageSizeOverride: 'deck-16-9',
+        hideHeader: true,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'landscape-cover-hero',
+          "'Space Grotesk', -apple-system, sans-serif",
+          "'Inter', -apple-system, sans-serif",
+          "'Space Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-deck-p2',
+        title: 'Spatial Concept & Narrative',
+        sectionLabel: '02 · Concept Design',
+        templateId: 'landscape-case-study',
+        pageSizeOverride: 'deck-16-9',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'landscape-case-study',
+          "'Space Grotesk', -apple-system, sans-serif",
+          "'Inter', -apple-system, sans-serif",
+          "'Space Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-deck-p3',
+        title: 'Materiality & Plates',
+        sectionLabel: '03 · Tectonic Systems',
+        templateId: 'dual-plate-study',
+        pageSizeOverride: 'deck-16-9',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'dual-plate-study',
+          "'Space Grotesk', -apple-system, sans-serif",
+          "'Inter', -apple-system, sans-serif",
+          "'Space Mono', monospace"
+        ),
+      },
+      {
+        id: 'kit-deck-p4',
+        title: 'Gallery & Deliverables',
+        sectionLabel: '04 · Masterplan Grid',
+        templateId: 'landscape-photo-quad',
+        pageSizeOverride: 'deck-16-9',
+        hideHeader: false,
+        hideFooter: false,
+        blocks: createBlocksForTemplate(
+          'landscape-photo-quad',
+          "'Space Grotesk', -apple-system, sans-serif",
+          "'Inter', -apple-system, sans-serif",
+          "'Space Mono', monospace"
+        ),
+      },
+    ],
+  },
+];

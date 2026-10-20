@@ -20,11 +20,15 @@ You can try the live demo directly in your browser:
 
 ## ⚡ Key Features
 
+- **1-Click Multi-Page Starter Kits**: Jumpstart full portfolios with ready-to-use kits (Architectural Monograph, Interior Exhibition Showcase, Executive Pitch Deck, and Competition Board).
+- **Direct Desktop Drag & Drop**: Drop single images to instantly replace target plates or add full visual blocks; drop multiple photos together to auto-generate responsive photo grids.
+- **Spotlight Command Palette (`Cmd + K` / `Ctrl + K`)**: Keyboard-driven action hub to quickly switch themes, navigate layouts, insert blocks, tweak typography, and export.
+- **Architectural Stock Visuals Library**: Built-in curated gallery of travertine, board-formed concrete, warm timber joinery, and atmospheric light studies ready for 1-click insertion.
+- **Multi-Format Export & ZIP Archiving**: Vector PDF engine, 300 DPI high-res print, email-optimized (<10MB), and 1-click bundled ZIP archive of all pages.
 - **Real-Time 1,938 Google Fonts Search**: Instant autocomplete search across all 1,938 Google Fonts with zero-latency streaming and automatic CDN stylesheet injection.
 - **Multi-Layer Typography Studio**: Granular independent styling for Kicker / Category, Main Headline, and Subtitle with edge-to-edge full width and true horizontal center alignment.
 - **Modular Architectural Layouts**: Horizontal (Landscape) and Vertical (Portrait) page formats (A4 Portrait/Landscape, US Letter, 16:9 Presentation Decks, 4:3 Slides) with orientation-filtered editorial templates.
 - **Interactive Visual Plates**: Before/After drag comparison slider, dynamic multi-photo grids, dual plates, and device mockups (MacBook, iPad, Studio Display).
-- **Production-Grade Vector PDF Export**: Generates publication-ready, multi-page vector PDFs with archival margins, running headers, and customizable folio numbering.
 - **Presentation Deck Mode**: Fullscreen projection view (`F5` / `Alt+P`) with slide fraction navigation.
 - **State Persistence & JSON Archive**: LocalStorage auto-save plus one-click project JSON export/import.
 
@@ -93,6 +97,7 @@ Generates an optimized static bundle in the `dist/` directory ready for deployme
 
 | Shortcut | Description |
 | :--- | :--- |
+| `Cmd + K` / `Ctrl + K` | Open **Spotlight Command Palette** |
 | `Ctrl + Z` / `Cmd + Z` | **Undo** last change |
 | `Ctrl + Y` / `Cmd + Shift + Z` | **Redo** undone change |
 | `F5` or `Alt + P` | Open **Fullscreen Presentation Deck** |

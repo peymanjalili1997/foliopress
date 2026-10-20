@@ -79,6 +79,7 @@ interface PageCanvasProps {
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
   onDuplicateBlock: (blockId: string) => void;
   onDeleteBlock: (blockId: string) => void;
+  onInsertDroppedImages?: (imageUrls: string[]) => void;
   isExportMode?: boolean;
   scale?: number;
 }
@@ -129,15 +130,54 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
   onMoveBlock,
   onDuplicateBlock,
   onDeleteBlock,
+  onInsertDroppedImages,
   isExportMode = false,
   scale = 1,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isCanvasDragOver, setIsCanvasDragOver] = useState(false);
   const uploadTargetRef = useRef<{
     blockId: string;
     field: 'imageUrl' | 'secondaryImageUrl' | 'beforeImageUrl' | 'afterImageUrl' | 'gridImage';
     gridIndex?: number;
   } | null>(null);
+
+  const handleCanvasDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (isExportMode) return;
+    if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+      e.preventDefault();
+      setIsCanvasDragOver(true);
+    }
+  };
+
+  const handleCanvasDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (isExportMode) return;
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsCanvasDragOver(false);
+  };
+
+  const handleCanvasDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (isExportMode) return;
+    e.preventDefault();
+    setIsCanvasDragOver(false);
+    const files = Array.from(e.dataTransfer.files || []).filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    const promises = files.map(
+      (file) =>
+        new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        })
+    );
+
+    Promise.all(promises).then((urls) => {
+      if (urls.length > 0 && onInsertDroppedImages) {
+        onInsertDroppedImages(urls);
+      }
+    });
+  };
 
   const activePageSizeId = page.pageSizeOverride || globalSettings.pageSize;
   const sizeSpec =
@@ -1640,6 +1680,9 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         onClick={() => {
           if (!isExportMode) onSelectBlock(null);
         }}
+        onDragOver={handleCanvasDragOver}
+        onDragLeave={handleCanvasDragLeave}
+        onDrop={handleCanvasDrop}
         style={{
           width: `${sizeSpec.widthPx}px`,
           height: `${sizeSpec.heightPx}px`,
@@ -1655,6 +1698,18 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
             : 'shadow-[0_12px_40px_rgba(0,0,0,0.09)] ring-1 ring-stone-900/10'
         }`}
       >
+        {/* Drag & Drop Visual Overlay */}
+        {isCanvasDragOver && !isExportMode && (
+          <div className="absolute inset-0 z-50 bg-stone-900/20 backdrop-blur-xs border-4 border-dashed border-stone-800 m-3 rounded-2xl flex flex-col items-center justify-center pointer-events-none transition-all">
+            <div className="bg-white/95 text-stone-900 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3.5 border border-stone-200">
+              <Upload className="w-6 h-6 text-stone-900 animate-bounce" />
+              <div>
+                <p className="text-sm font-semibold">Drop image(s) to add to page</p>
+                <p className="text-xs text-stone-500">1 image creates full plate · 2+ images create photo grid</p>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Top Running Header */}
         {globalSettings.showRunningHeader && !page.hideHeader ? (
           <header

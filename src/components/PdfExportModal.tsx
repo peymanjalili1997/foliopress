@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { toJpeg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { CheckCircle2, Download, FileText, Loader2, Printer, X } from 'lucide-react';
+import { zipSync } from 'fflate';
+import { Archive, CheckCircle2, Download, FileText, Loader2, Printer, X } from 'lucide-react';
 import { PAGE_SIZE_PRESETS } from '../data/editorialAssets';
 import { GlobalDocumentSettings, PortfolioPage } from '../types/portfolio';
 import { PageCanvas } from './PageCanvas';
@@ -13,7 +14,7 @@ interface PdfExportModalProps {
   globalSettings: GlobalDocumentSettings;
 }
 
-type QualityPreset = 'print-300' | 'studio-200' | 'web-150';
+type QualityPreset = 'print-300' | 'email-180' | 'web-120';
 
 interface QualitySpec {
   id: QualityPreset;
@@ -34,20 +35,20 @@ const QUALITY_SPECS: QualitySpec[] = [
     jpegQuality: 0.98,
   },
   {
-    id: 'studio-200',
-    name: 'Studio Presentation',
-    dpiLabel: '220 DPI · 2x Retina',
-    description: 'Crisp typography and photography balanced for client email attachments.',
-    pixelRatio: 2,
-    jpegQuality: 0.94,
+    id: 'email-180',
+    name: 'Email & Job Application Ready',
+    dpiLabel: '180 DPI · Balanced <10MB',
+    description: 'Crisp typography and photography optimized for firm job applications and email attachments.',
+    pixelRatio: 1.8,
+    jpegQuality: 0.88,
   },
   {
-    id: 'web-150',
-    name: 'Compact Web Review',
-    dpiLabel: '150 DPI · 1.5x Standard',
-    description: 'Lightweight file size for rapid online sharing and portal uploads.',
-    pixelRatio: 1.5,
-    jpegQuality: 0.88,
+    id: 'web-120',
+    name: 'Compact Web Preview',
+    dpiLabel: '120 DPI · Lightweight',
+    description: 'Fast file size for rapid online sharing, cloud messaging, and portal uploads.',
+    pixelRatio: 1.2,
+    jpegQuality: 0.78,
   },
 ];
 
@@ -66,6 +67,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
         .replace(/(^-|-$)/g, '') || 'portfolio-monograph'}.pdf`
   );
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingZip, setIsExportingZip] = useState(false);
   const [currentStepPage, setCurrentStepPage] = useState<number>(0);
   const [exportDone, setExportDone] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -148,6 +150,66 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
       );
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportZip = async () => {
+    if (!exportStageRef.current || pages.length === 0) return;
+    setIsExportingZip(true);
+    setExportDone(false);
+    setErrorMessage(null);
+    setCurrentStepPage(1);
+
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      const pageElements = exportStageRef.current.querySelectorAll('.export-page-node');
+      const zipEntries: Record<string, Uint8Array> = {};
+
+      for (let i = 0; i < pageElements.length; i++) {
+        setCurrentStepPage(i + 1);
+        const el = pageElements[i] as HTMLElement;
+
+        await new Promise((r) => setTimeout(r, 60));
+
+        const dataUrl = await toJpeg(el, {
+          quality: qualitySpec.jpegQuality,
+          pixelRatio: qualitySpec.pixelRatio,
+          backgroundColor: pages[i].backgroundColor || globalSettings.backgroundColor,
+          cacheBust: false,
+        });
+
+        const base64 = dataUrl.split(',')[1];
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let b = 0; b < binary.length; b++) {
+          bytes[b] = binary.charCodeAt(b);
+        }
+
+        const paddedIndex = String(i + 1).padStart(2, '0');
+        const pageTitleClean = (pages[i].title || `page-${paddedIndex}`)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+        zipEntries[`page-${paddedIndex}-${pageTitleClean}.jpg`] = bytes;
+      }
+
+      const zipped = zipSync(zipEntries);
+      const blob = new Blob([zipped], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename.replace(/\.pdf$/i, '')}-image-pack.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportDone(true);
+    } catch (err) {
+      console.error('ZIP export error:', err);
+      setErrorMessage('Could not generate images zip. Please try again.');
+    } finally {
+      setIsExportingZip(false);
     }
   };
 
@@ -277,21 +339,42 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            disabled={isExporting}
-            onClick={handleNativeVectorPrint}
-            className="px-3.5 py-2 text-xs font-medium text-stone-700 hover:text-stone-900 bg-white border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Browser Print / Vector PDF</span>
-          </button>
+        <div className="px-6 py-4 bg-stone-50 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={isExporting || isExportingZip}
+              onClick={handleNativeVectorPrint}
+              className="px-3 py-2 text-xs font-medium text-stone-700 hover:text-stone-900 bg-white border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Vector Print</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isExporting || isExportingZip}
+              onClick={handleExportZip}
+              className="px-3 py-2 text-xs font-medium text-stone-700 hover:text-stone-900 bg-white border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+            >
+              {isExportingZip ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-700" />
+                  <span>Zipping Pages...</span>
+                </>
+              ) : (
+                <>
+                  <Archive className="w-3.5 h-3.5 text-stone-600" />
+                  <span>Image Pack (ZIP)</span>
+                </>
+              )}
+            </button>
+          </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              disabled={isExporting}
+              disabled={isExporting || isExportingZip}
               onClick={onClose}
               className="px-3.5 py-2 text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors"
             >
@@ -299,9 +382,9 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
             </button>
             <button
               type="button"
-              disabled={isExporting}
+              disabled={isExporting || isExportingZip}
               onClick={handleGeneratePdf}
-              className="px-4 py-2 text-xs font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+              className="px-4 py-2 text-xs font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap shadow-xs"
             >
               {isExporting ? (
                 <>
@@ -311,7 +394,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
               ) : (
                 <>
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download High-Res PDF</span>
+                  <span>Download PDF</span>
                 </>
               )}
             </button>

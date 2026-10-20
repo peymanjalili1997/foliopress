@@ -9,12 +9,14 @@ import {
   ArrowUp,
   ChevronLeft,
   ChevronRight,
+  Command,
   Copy,
   Download,
   Eye,
   FilePlus,
   FolderOpen,
   GripVertical,
+  Layers,
   LayoutGrid,
   Maximize2,
   Minus,
@@ -23,24 +25,33 @@ import {
   Redo2,
   RotateCcw,
   Save,
+  Sparkles,
   Trash2,
+  Type,
   Undo2,
 } from 'lucide-react';
 import { AddPageModal } from './components/AddPageModal';
+import { CommandItem, CommandPalette } from './components/CommandPalette';
 import { InspectorSidebar, InspectorTab } from './components/InspectorSidebar';
 import { PageCanvas } from './components/PageCanvas';
 import { PdfExportModal } from './components/PdfExportModal';
 import { PresentationView } from './components/PresentationView';
+import { StarterKitsModal } from './components/StarterKitsModal';
+import { StockLibraryModal } from './components/StockLibraryModal';
 import { TextFormatToolbar } from './components/TextFormatToolbar';
 import {
   createBlocksForTemplate,
   createUid,
   CURATED_VISUAL_PLATES,
+  FONT_PAIRINGS,
+  GLOBAL_THEMES,
   INITIAL_GLOBAL_SETTINGS,
   INITIAL_PAGES,
   PAGE_SIZE_PRESETS,
   PAGE_TEMPLATES,
 } from './data/editorialAssets';
+import { STARTER_KITS, StarterKit } from './data/starterKits';
+import { StockVisualPlate } from './data/stockLibrary';
 import {
   BlockType,
   GlobalDocumentSettings,
@@ -98,6 +109,9 @@ export default function App() {
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isPresentationOpen, setIsPresentationOpen] = useState<boolean>(false);
   const [isAddPageModalOpen, setIsAddPageModalOpen] = useState<boolean>(false);
+  const [isStarterKitsModalOpen, setIsStarterKitsModalOpen] = useState<boolean>(false);
+  const [isStockLibraryOpen, setIsStockLibraryOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [draggedPageIdx, setDraggedPageIdx] = useState<number | null>(null);
 
   // Undo / Redo History Stack
@@ -127,9 +141,15 @@ export default function App() {
     }
   };
 
-  // Keyboard shortcut listener for Undo/Redo & Presentation F5
+  // Keyboard shortcut listener for Undo/Redo & Presentation F5 & Command Palette Cmd+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
@@ -822,6 +842,249 @@ export default function App() {
     setSelectedBlockId(INITIAL_PAGES[0].blocks[0]?.id || null);
   };
 
+  const handleApplyGlobalTheme = (themeId: string) => {
+    const theme = GLOBAL_THEMES.find((t) => t.id === themeId);
+    if (!theme) return;
+    setGlobalSettings((prev) => ({
+      ...prev,
+      themeId: theme.id,
+      backgroundColor: theme.backgroundColor,
+      textColor: theme.textColor,
+      mutedTextColor: theme.mutedTextColor,
+      accentColor: theme.accentColor,
+      borderColor: theme.borderColor,
+    }));
+  };
+
+  const handleApplyStarterKit = (kit: StarterKit) => {
+    const clonedPages: PortfolioPage[] = JSON.parse(JSON.stringify(kit.pages));
+    const nextSettings: GlobalDocumentSettings = {
+      ...globalSettings,
+      pageSize: kit.pageSize,
+      portfolioTitle: kit.name,
+      headerLeftText: kit.name,
+      footerLeftText: kit.author,
+    };
+    setPages(clonedPages);
+    setGlobalSettings(nextSettings);
+    pushHistory(clonedPages);
+    setActivePageId(clonedPages[0]?.id || 'page-1');
+    setSelectedBlockId(clonedPages[0]?.blocks[0]?.id || null);
+    setIsStarterKitsModalOpen(false);
+  };
+
+  const handleSelectStockPlate = (plate: StockVisualPlate) => {
+    if (
+      selectedBlock &&
+      (selectedBlock.type === 'image-full' ||
+        selectedBlock.type === 'split-showcase' ||
+        selectedBlock.type === 'device-mockup' ||
+        selectedBlock.type === 'before-after')
+    ) {
+      handleUpdateBlock(selectedBlock.id, { imageUrl: plate.url });
+    } else if (selectedBlock && selectedBlock.type === 'multi-photo-grid') {
+      const grid = selectedBlock.gridImages || [];
+      handleUpdateBlock(selectedBlock.id, {
+        gridImages: [
+          ...grid,
+          {
+            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            url: plate.url,
+            caption: `${plate.title} · ${plate.caption}`,
+          },
+        ],
+      });
+    } else {
+      const newBlock: PortfolioBlock = {
+        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'image-full',
+        imageUrl: plate.url,
+        caption: `${plate.title} — ${plate.caption}`,
+        imageHeightPx: 460,
+        imageObjectFit: 'cover',
+      };
+      handleUpdatePage({
+        blocks: [...currentPage.blocks, newBlock],
+      });
+      setSelectedBlockId(newBlock.id);
+    }
+    setIsStockLibraryOpen(false);
+  };
+
+  const handleInsertDroppedImages = (imageUrls: string[]) => {
+    if (!imageUrls || imageUrls.length === 0) return;
+
+    if (imageUrls.length === 1) {
+      const newBlock: PortfolioBlock = {
+        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'image-full',
+        imageUrl: imageUrls[0],
+        caption: 'Imported Plate — Visual Study',
+        imageHeightPx: 440,
+        imageObjectFit: 'cover',
+      };
+      handleUpdatePage({
+        blocks: [...currentPage.blocks, newBlock],
+      });
+      setSelectedBlockId(newBlock.id);
+    } else {
+      const cols = imageUrls.length === 2 ? 2 : imageUrls.length <= 4 ? 2 : 3;
+      const newBlock: PortfolioBlock = {
+        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'multi-photo-grid',
+        gridColumns: cols,
+        gridGapPx: 16,
+        gridAspectRatio: '4/3',
+        gridImages: imageUrls.map((url, i) => ({
+          id: `img-${Date.now()}-${i}`,
+          url,
+          caption: `Plate ${i + 1} — Visual Detail`,
+        })),
+      };
+      handleUpdatePage({
+        blocks: [...currentPage.blocks, newBlock],
+      });
+      setSelectedBlockId(newBlock.id);
+    }
+  };
+
+  const commandItems: CommandItem[] = [
+    {
+      id: 'cmd-export-pdf',
+      category: 'Export & Present',
+      title: 'Export High-Resolution PDF',
+      subtitle: '300 DPI Print, Email-ready or Multi-Page ZIP Image Pack',
+      shortcut: '⌘E',
+      icon: Download,
+      action: () => setIsExportModalOpen(true),
+    },
+    {
+      id: 'cmd-present',
+      category: 'Export & Present',
+      title: 'Fullscreen Client Slide Deck',
+      subtitle: 'Open presentation mode with keyboard arrow navigation',
+      shortcut: 'F5',
+      icon: Play,
+      action: () => setIsPresentationOpen(true),
+    },
+    {
+      id: 'cmd-starter-kits',
+      category: 'Starter Kits',
+      title: '1-Click Multi-Page Starter Kits',
+      subtitle: 'Browse Monograph, Showcase, Pitch & Competition Decks',
+      icon: Sparkles,
+      action: () => setIsStarterKitsModalOpen(true),
+    },
+    {
+      id: 'cmd-stock-library',
+      category: 'Pages & Templates',
+      title: 'Architectural Stock Visuals & Materials Library',
+      subtitle: 'Travertine, Concrete, Timber joinery, and Light studies',
+      icon: Layers,
+      action: () => setIsStockLibraryOpen(true),
+    },
+    {
+      id: 'cmd-add-page',
+      category: 'Pages & Templates',
+      title: 'Add New Page',
+      subtitle: 'Choose Orientation (Vertical/Horizontal) and Template',
+      shortcut: '⌘N',
+      icon: FilePlus,
+      action: () => setIsAddPageModalOpen(true),
+    },
+    {
+      id: 'cmd-view-templates',
+      category: 'Pages & Templates',
+      title: 'Browse Page Templates',
+      subtitle: 'Vertical and Horizontal editorial page layouts',
+      icon: LayoutGrid,
+      action: () => {
+        setWorkspaceMode('single');
+        setInspectorTab('page');
+      },
+    },
+    {
+      id: 'cmd-orient-portrait',
+      category: 'Canvas & View',
+      title: 'Set Document Orientation: Vertical (Portrait A4)',
+      subtitle: 'Standard architectural monograph format (210 × 297 mm)',
+      icon: ArrowUp,
+      action: () => handleToggleOrientation('portrait'),
+    },
+    {
+      id: 'cmd-orient-landscape',
+      category: 'Canvas & View',
+      title: 'Set Document Orientation: Horizontal (Landscape A4)',
+      subtitle: 'Editorial project showcase and exhibition format (297 × 210 mm)',
+      icon: ArrowDown,
+      action: () => handleToggleOrientation('landscape'),
+    },
+    {
+      id: 'cmd-view-canvas',
+      category: 'Canvas & View',
+      title: 'Switch to Single Page Canvas',
+      subtitle: 'Focused interactive page editing',
+      icon: Maximize2,
+      action: () => setWorkspaceMode('single'),
+    },
+    {
+      id: 'cmd-view-spread',
+      category: 'Canvas & View',
+      title: 'Switch to Spread Reorder View',
+      subtitle: 'Multi-page overview and drag-and-drop sequence management',
+      icon: LayoutGrid,
+      action: () => setWorkspaceMode('spread'),
+    },
+    {
+      id: 'cmd-view-clean',
+      category: 'Canvas & View',
+      title: 'Toggle Clean Preview',
+      subtitle: 'Hide all UI toolbars and inspect full layout cleanly',
+      icon: Eye,
+      action: () => setWorkspaceMode(workspaceMode === 'preview' ? 'single' : 'preview'),
+    },
+    {
+      id: 'cmd-zoom-reset',
+      category: 'Canvas & View',
+      title: 'Reset Canvas Zoom to 100%',
+      subtitle: 'View page at native 1:1 scale',
+      icon: Maximize2,
+      action: () => setCanvasZoom(1),
+    },
+    {
+      id: 'cmd-zoom-in',
+      category: 'Canvas & View',
+      title: 'Zoom In Canvas (+10%)',
+      icon: Plus,
+      action: () => setCanvasZoom((z) => Math.min(1.8, +(z + 0.1).toFixed(2))),
+    },
+    {
+      id: 'cmd-zoom-out',
+      category: 'Canvas & View',
+      title: 'Zoom Out Canvas (-10%)',
+      icon: Minus,
+      action: () => setCanvasZoom((z) => Math.max(0.4, +(z - 0.1).toFixed(2))),
+    },
+    ...GLOBAL_THEMES.map((theme) => ({
+      id: `cmd-theme-${theme.id}`,
+      category: 'Archival Themes' as const,
+      title: `Apply Theme: ${theme.name}`,
+      subtitle: `${theme.primaryInk} on ${theme.paperBackground} (${theme.headingFont})`,
+      icon: FolderOpen,
+      action: () => handleApplyGlobalTheme(theme.id),
+    })),
+    ...FONT_PAIRINGS.map((pairing) => ({
+      id: `cmd-font-pairing-${pairing.id}`,
+      category: 'Typography' as const,
+      title: `Font Pairing: ${pairing.name}`,
+      subtitle: `${pairing.headingFont} + ${pairing.bodyFont} (${pairing.style})`,
+      icon: Type,
+      action: () => {
+        handleApplyGlobalFontsToAllPages(pairing.headingFont, pairing.bodyFont, pairing.monoFont);
+      },
+    })),
+  ];
+
   return (
     <div dir="ltr" className="h-screen w-screen overflow-hidden flex flex-col bg-[#F1F0EC] text-stone-900">
       {/* STRICT 3-ZONE TOP BAR CONTRACT */}
@@ -906,8 +1169,44 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Zone 3: Actions (Undo, Redo, Present, Export PDF) */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Zone 3: Actions (Command Palette, Starter Kits, Stock Library, Undo, Redo, Present, Export PDF) */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Quick-Access Command Palette */}
+          <button
+            type="button"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg transition-colors cursor-pointer"
+            title="Open Command Palette (⌘K / Ctrl+K)"
+          >
+            <Command className="w-3.5 h-3.5 text-stone-500" />
+            <span className="font-medium">Actions</span>
+            <kbd className="text-[10px] font-mono bg-white px-1 py-0.2 rounded border border-stone-200 text-stone-500">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Quick-Access Starter Kits */}
+          <button
+            type="button"
+            onClick={() => setIsStarterKitsModalOpen(true)}
+            className="px-2.5 py-1.5 text-xs font-medium text-stone-800 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-2xs cursor-pointer"
+            title="Browse 1-Click Multi-Page Starter Kits"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+            <span className="hidden sm:inline">Starter Kits</span>
+          </button>
+
+          {/* Quick-Access Stock Visuals */}
+          <button
+            type="button"
+            onClick={() => setIsStockLibraryOpen(true)}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-2xs cursor-pointer"
+            title="Architectural Materials & Visuals Stock Library"
+          >
+            <Layers className="w-3.5 h-3.5 text-stone-600" />
+            <span>Stock Library</span>
+          </button>
+
           <div className="flex items-center gap-0.5 bg-stone-100 p-0.5 rounded-lg border border-stone-200">
             <button
               type="button"
@@ -1417,6 +1716,7 @@ export default function App() {
                   onMoveBlock={handleMoveBlock}
                   onDuplicateBlock={handleDuplicateBlock}
                   onDeleteBlock={handleDeleteBlock}
+                  onInsertDroppedImages={handleInsertDroppedImages}
                   isExportMode={workspaceMode === 'preview'}
                   scale={canvasZoom}
                 />
@@ -1443,9 +1743,31 @@ export default function App() {
             onAddPageWithTemplate={handleAddPageWithTemplate}
             onUpdateGlobalSettings={handleUpdateGlobalSettings}
             onApplyGlobalFontsToAllPages={handleApplyGlobalFontsToAllPages}
+            onOpenStockLibrary={() => setIsStockLibraryOpen(true)}
           />
         )}
       </div>
+
+      {/* 1-Click Multi-Page Starter Kits Modal */}
+      <StarterKitsModal
+        isOpen={isStarterKitsModalOpen}
+        onClose={() => setIsStarterKitsModalOpen(false)}
+        onApplyKit={handleApplyStarterKit}
+      />
+
+      {/* Curated Architectural Visuals & Materials Library */}
+      <StockLibraryModal
+        isOpen={isStockLibraryOpen}
+        onClose={() => setIsStockLibraryOpen(false)}
+        onSelectPlate={handleSelectStockPlate}
+      />
+
+      {/* Spotlight Command Palette (Cmd + K / Ctrl + K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        commands={commandItems}
+      />
 
       {/* High-Resolution PDF Export Modal */}
       <PdfExportModal

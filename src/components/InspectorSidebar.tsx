@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Search,
   Sliders,
+  Sparkles,
   Trash2,
   Type,
   Upload,
@@ -58,6 +59,7 @@ interface InspectorSidebarProps {
   onAddPageWithTemplate: (templateId: PageTemplateId) => void;
   onUpdateGlobalSettings: (patch: Partial<GlobalDocumentSettings>) => void;
   onApplyGlobalFontsToAllPages: (headingFont: string, bodyFont: string, monoFont: string) => void;
+  onOpenStockLibrary?: () => void;
 }
 
 export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
@@ -76,6 +78,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   onAddPageWithTemplate,
   onUpdateGlobalSettings,
   onApplyGlobalFontsToAllPages,
+  onOpenStockLibrary,
 }) => {
   const primaryUploadRef = useRef<HTMLInputElement | null>(null);
   const secondaryUploadRef = useRef<HTMLInputElement | null>(null);
@@ -408,6 +411,16 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                           </button>
                         ))}
                       </div>
+                      {onOpenStockLibrary && (
+                        <button
+                          type="button"
+                          onClick={onOpenStockLibrary}
+                          className="w-full mt-2.5 py-2 px-3 text-xs font-medium text-stone-800 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Browse Architectural Stock Library</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -510,6 +523,16 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                           </div>
                         ))}
                       </div>
+                      {onOpenStockLibrary && (
+                        <button
+                          type="button"
+                          onClick={onOpenStockLibrary}
+                          className="w-full mt-2.5 py-2 px-3 text-xs font-medium text-stone-800 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Browse Architectural Stock Library</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
