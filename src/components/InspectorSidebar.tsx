@@ -147,22 +147,28 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   }
 
   const getActiveStyle = (): TextStyle => {
+    const fallbackStyle: TextStyle = {
+      fontFamily: globalSettings.bodyFont || "'Plus Jakarta Sans', sans-serif",
+      fontSize: 14,
+      fontWeight: 400,
+      fontStyle: 'normal',
+      textDecoration: 'none',
+      textAlign: 'left',
+      color: '#1c1917',
+      lineHeight: 1.5,
+      letterSpacing: 0,
+      textTransform: 'none',
+    };
+
     if (!selectedBlock) {
-      return {
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-        fontSize: 14,
-        fontWeight: 400,
-        color: '#1c1917',
-        lineHeight: 1.5,
-        letterSpacing: 0,
-        textTransform: 'none',
-      };
+      return fallbackStyle;
     }
 
     if (activeTextTarget === 'kicker') {
       return (
         selectedBlock.kickerTextStyle || {
-          fontFamily: "'JetBrains Mono', monospace",
+          ...fallbackStyle,
+          fontFamily: globalSettings.monoFont || "'JetBrains Mono', monospace",
           fontSize: 11,
           fontWeight: 500,
           color: '#78716c',
@@ -175,7 +181,8 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
     if (activeTextTarget === 'secondary') {
       return (
         selectedBlock.secondaryTextStyle || {
-          fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
+          ...fallbackStyle,
+          fontFamily: globalSettings.bodyFont || "'Plus Jakarta Sans', -apple-system, sans-serif",
           fontSize: 14,
           fontWeight: 400,
           lineHeight: 1.5,
@@ -186,7 +193,7 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
       );
     }
 
-    return selectedBlock.textStyle;
+    return selectedBlock.textStyle || fallbackStyle;
   };
 
   const activeStyle = getActiveStyle();

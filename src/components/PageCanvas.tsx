@@ -285,18 +285,34 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
     }
   };
 
-  const buildTextCss = (style: TextStyle, fallbackColor = pageInk): React.CSSProperties => ({
-    fontFamily: style.fontFamily,
-    fontSize: `${style.fontSize}px`,
-    fontWeight: style.fontWeight,
-    fontStyle: style.fontStyle,
-    textDecoration: style.textDecoration,
-    textAlign: style.textAlign,
-    lineHeight: style.lineHeight,
-    letterSpacing: `${style.letterSpacing}em`,
-    textTransform: style.textTransform,
-    color: style.color || fallbackColor,
-  });
+  const buildTextCss = (style?: TextStyle, fallbackColor = pageInk): React.CSSProperties => {
+    if (!style) {
+      return {
+        fontFamily: globalSettings.bodyFont || "'Plus Jakarta Sans', sans-serif",
+        fontSize: '14px',
+        fontWeight: 400,
+        fontStyle: 'normal',
+        textDecoration: 'none',
+        textAlign: 'left',
+        lineHeight: 1.5,
+        letterSpacing: 0,
+        textTransform: 'none',
+        color: fallbackColor,
+      };
+    }
+    return {
+      fontFamily: style.fontFamily || globalSettings.bodyFont || "'Plus Jakarta Sans', sans-serif",
+      fontSize: `${style.fontSize || 14}px`,
+      fontWeight: style.fontWeight || 400,
+      fontStyle: style.fontStyle || 'normal',
+      textDecoration: style.textDecoration || 'none',
+      textAlign: style.textAlign || 'left',
+      lineHeight: style.lineHeight || 1.5,
+      letterSpacing: `${style.letterSpacing || 0}em`,
+      textTransform: style.textTransform || 'none',
+      color: style.color || fallbackColor,
+    };
+  };
 
   const renderEditableText = (
     value: string,
@@ -449,7 +465,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                 lineHeight: 1.45,
                 letterSpacing: '0.02em',
                 color: mutedInk,
-                textAlign: block.textStyle.textAlign || 'left',
+                textAlign: block.textStyle?.textAlign || 'left',
               },
               'Add figure caption or plate credit...',
               false
@@ -895,8 +911,8 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     spec.value,
                     (val) => updateSpec(idx, { value: val }),
                     {
-                      fontFamily: block.textStyle.fontFamily || globalSettings.bodyFont,
-                      fontSize: `${block.textStyle.fontSize || 12.5}px`,
+                      fontFamily: block.textStyle?.fontFamily || globalSettings.bodyFont,
+                      fontSize: `${block.textStyle?.fontSize || 12.5}px`,
                       fontWeight: 500,
                       color: pageInk,
                       lineHeight: 1.4,

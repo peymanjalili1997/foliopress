@@ -77,28 +77,29 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
 
   // Determine active typography style based on current target
   const getActiveStyle = (): TextStyle => {
+    const fallbackStyle: TextStyle = {
+      fontFamily: defaultHeadingFont || "'Plus Jakarta Sans', sans-serif",
+      fontSize: 16,
+      fontWeight: 400,
+      fontStyle: 'normal',
+      textDecoration: 'none',
+      textAlign: 'left',
+      lineHeight: 1.5,
+      letterSpacing: 0,
+      textTransform: 'none',
+    };
+
     if (!selectedBlock) {
-      return {
-        fontFamily: defaultHeadingFont,
-        fontSize: 16,
-        fontWeight: 400,
-        fontStyle: 'normal',
-        textDecoration: 'none',
-        textAlign: 'left',
-        lineHeight: 1.5,
-        letterSpacing: 0,
-        textTransform: 'none',
-      };
+      return fallbackStyle;
     }
 
     if (activeTextTarget === 'kicker') {
       return (
         selectedBlock.kickerTextStyle || {
+          ...fallbackStyle,
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 11,
           fontWeight: 500,
-          fontStyle: 'normal',
-          textDecoration: 'none',
           textAlign: selectedBlock.textStyle?.textAlign || 'left',
           lineHeight: 1.4,
           letterSpacing: 0.12,
@@ -110,20 +111,17 @@ export const TextFormatToolbar: React.FC<TextFormatToolbarProps> = ({
     if (activeTextTarget === 'secondary') {
       return (
         selectedBlock.secondaryTextStyle || {
+          ...fallbackStyle,
           fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
           fontSize: 14,
           fontWeight: 400,
-          fontStyle: 'normal',
-          textDecoration: 'none',
           textAlign: selectedBlock.textStyle?.textAlign || 'left',
           lineHeight: 1.55,
-          letterSpacing: 0,
-          textTransform: 'none',
         }
       );
     }
 
-    return selectedBlock.textStyle;
+    return selectedBlock.textStyle || fallbackStyle;
   };
 
   const activeStyle = getActiveStyle();
