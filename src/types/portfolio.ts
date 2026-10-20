@@ -131,6 +131,7 @@ export interface PortfolioBlock {
   toolsList?: string[];
   // Multi-Photo Grid
   gridImages?: GridImageItem[];
+  gridColumns?: 2 | 3 | 4;
 }
 
 export type PageTemplateId =

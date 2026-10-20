@@ -2,12 +2,15 @@ import React, { useRef } from 'react';
 import {
   Check,
   FilePlus2,
+  Grid,
   Image as ImageIcon,
   Layers,
   LayoutTemplate,
   Palette,
+  Plus,
   RefreshCw,
   Sliders,
+  Trash2,
   Type,
   Upload,
 } from 'lucide-react';
@@ -71,7 +74,13 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      if (isSecondary) {
+      if (selectedBlock.type === 'before-after') {
+        if (isSecondary) {
+          onUpdateBlock(selectedBlock.id, { afterImageUrl: dataUrl, secondaryImageUrl: dataUrl });
+        } else {
+          onUpdateBlock(selectedBlock.id, { beforeImageUrl: dataUrl, imageUrl: dataUrl });
+        }
+      } else if (isSecondary) {
         onUpdateBlock(selectedBlock.id, { secondaryImageUrl: dataUrl });
       } else {
         onUpdateBlock(selectedBlock.id, { imageUrl: dataUrl });
@@ -193,18 +202,24 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                         <span>
                           {selectedBlock.type === 'dual-image'
                             ? 'Upload Left Image Plate'
+                            : selectedBlock.type === 'before-after'
+                            ? 'Upload "Before" Image Plate'
                             : 'Upload Custom Image'}
                         </span>
                       </button>
 
-                      {selectedBlock.type === 'dual-image' && (
+                      {(selectedBlock.type === 'dual-image' || selectedBlock.type === 'before-after') && (
                         <button
                           type="button"
                           onClick={() => secondaryUploadRef.current?.click()}
-                          className="w-full py-2 px-3 bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+                          className="w-full py-2 px-3 bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors border border-stone-200"
                         >
                           <Upload className="w-3.5 h-3.5" />
-                          <span>Upload Right Image Plate</span>
+                          <span>
+                            {selectedBlock.type === 'before-after'
+                              ? 'Upload "After" Image Plate'
+                              : 'Upload Right Image Plate'}
+                          </span>
                         </button>
                       )}
                     </div>
@@ -310,6 +325,108 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                               className="w-full h-full object-cover"
                             />
                           </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Multi-Photo Grid Settings in Sidebar */}
+                {selectedBlock.type === 'multi-photo-grid' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <Grid className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Photo Grid Layout</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentGrid = selectedBlock.gridImages || [];
+                          const nextPlates = CURATED_VISUAL_PLATES;
+                          const newPlate = nextPlates[(currentGrid.length + 1) % nextPlates.length];
+                          const newItem = {
+                            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                            url: newPlate.url,
+                            caption: `Detail ${String.fromCharCode(65 + (currentGrid.length % 26))} — New Detail`,
+                          };
+                          onUpdateBlock(selectedBlock.id, { gridImages: [...currentGrid, newItem] });
+                        }}
+                        className="text-[11px] font-medium text-stone-800 hover:text-stone-950 flex items-center gap-1 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Photo</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Columns</label>
+                      <div className="grid grid-cols-3 gap-1 p-0.5 bg-stone-100 rounded-md">
+                        {([2, 3, 4] as const).map((col) => {
+                          const activeCol = selectedBlock.gridColumns || 3;
+                          return (
+                            <button
+                              key={col}
+                              type="button"
+                              onClick={() => onUpdateBlock(selectedBlock.id, { gridColumns: col })}
+                              className={`py-1 text-xs font-medium rounded transition-colors ${
+                                activeCol === col
+                                  ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                                  : 'text-stone-600'
+                              }`}
+                            >
+                              {col} Cols
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] text-stone-500">
+                        Photos in Grid ({selectedBlock.gridImages?.length || 3})
+                      </label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {(selectedBlock.gridImages || []).map((photo, pIdx) => (
+                          <div
+                            key={photo.id || pIdx}
+                            className="flex items-center gap-2 p-1.5 border border-stone-200 rounded-md bg-stone-50/50"
+                          >
+                            <img
+                              src={photo.url}
+                              alt=""
+                              className="w-10 h-10 object-cover rounded shrink-0 bg-stone-200"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <input
+                                type="text"
+                                value={photo.caption || ''}
+                                onChange={(e) => {
+                                  const currentGrid = selectedBlock.gridImages || [];
+                                  const next = currentGrid.map((p, i) =>
+                                    i === pIdx ? { ...p, caption: e.target.value } : p
+                                  );
+                                  onUpdateBlock(selectedBlock.id, { gridImages: next });
+                                }}
+                                placeholder="Caption..."
+                                className="w-full text-xs px-1.5 py-0.5 border border-stone-200 rounded bg-white text-stone-900"
+                              />
+                            </div>
+                            {(selectedBlock.gridImages?.length || 0) > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentGrid = selectedBlock.gridImages || [];
+                                  const next = currentGrid.filter((_, i) => i !== pIdx);
+                                  onUpdateBlock(selectedBlock.id, { gridImages: next });
+                                }}
+                                className="p-1 text-stone-400 hover:text-red-500"
+                                title="Remove photo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>

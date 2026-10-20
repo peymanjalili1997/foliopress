@@ -26,6 +26,7 @@ import {
   Trash2,
   Undo2,
 } from 'lucide-react';
+import { AddPageModal } from './components/AddPageModal';
 import { InspectorSidebar, InspectorTab } from './components/InspectorSidebar';
 import { PageCanvas } from './components/PageCanvas';
 import { PdfExportModal } from './components/PdfExportModal';
@@ -93,6 +94,7 @@ export default function App() {
   const [canvasZoom, setCanvasZoom] = useState<number>(0.78);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isPresentationOpen, setIsPresentationOpen] = useState<boolean>(false);
+  const [isAddPageModalOpen, setIsAddPageModalOpen] = useState<boolean>(false);
   const [draggedPageIdx, setDraggedPageIdx] = useState<number | null>(null);
 
   // Undo / Redo History Stack
@@ -500,6 +502,48 @@ export default function App() {
     }
   };
 
+  // Add a new page from the AddPageModal (Orientation + Blank/Template)
+  const handleAddPageFromModal = (config: {
+    orientation: 'portrait' | 'landscape';
+    templateId: PageTemplateId | 'blank';
+    title: string;
+  }) => {
+    const nextNum = pages.length + 1;
+    const padded = nextNum < 10 ? `0${nextNum}` : `${nextNum}`;
+    const pageSizeOverride: PageSizeId =
+      config.orientation === 'landscape' ? 'a4-landscape' : 'a4-portrait';
+
+    let newBlocks: PortfolioBlock[] = [];
+    if (config.templateId !== 'blank') {
+      newBlocks = createBlocksForTemplate(
+        config.templateId,
+        globalSettings.headingFont,
+        globalSettings.bodyFont,
+        globalSettings.monoFont
+      );
+    }
+
+    const tplMeta =
+      config.templateId !== 'blank'
+        ? PAGE_TEMPLATES.find((t) => t.id === config.templateId)
+        : null;
+
+    const newPage: PortfolioPage = {
+      id: createUid('page'),
+      title: config.title || (tplMeta ? tplMeta.name : `Page ${padded}`),
+      sectionLabel: `${padded} · ${tplMeta ? tplMeta.badge : 'EDITORIAL'}`,
+      templateId: config.templateId !== 'blank' ? config.templateId : undefined,
+      pageSizeOverride,
+      hideHeader: config.templateId === 'cover-monograph',
+      hideFooter: false,
+      blocks: newBlocks,
+    };
+
+    setPages((prev) => [...prev, newPage]);
+    setActivePageId(newPage.id);
+    setSelectedBlockId(newBlocks[0]?.id || null);
+  };
+
   // Add a new page with a chosen template
   const handleAddPageWithTemplate = (templateId: PageTemplateId = 'editorial-split') => {
     const tplMeta = PAGE_TEMPLATES.find((t) => t.id === templateId) || PAGE_TEMPLATES[1];
@@ -842,7 +886,7 @@ export default function App() {
               </div>
               <button
                 type="button"
-                onClick={() => handleAddPageWithTemplate('editorial-split')}
+                onClick={() => setIsAddPageModalOpen(true)}
                 className="px-2.5 py-1.5 text-xs font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-md flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
               >
                 <FilePlus className="w-3.5 h-3.5" />
@@ -1159,7 +1203,7 @@ export default function App() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleAddPageWithTemplate('editorial-split')}
+                    onClick={() => setIsAddPageModalOpen(true)}
                     className="px-3.5 py-2 text-xs font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800 flex items-center gap-1.5"
                   >
                     <FilePlus className="w-3.5 h-3.5" />
@@ -1312,6 +1356,14 @@ export default function App() {
         onClose={() => setIsExportModalOpen(false)}
         pages={pages}
         globalSettings={globalSettings}
+      />
+
+      {/* Add Page Modal (Orientation + Template Picker) */}
+      <AddPageModal
+        isOpen={isAddPageModalOpen}
+        onClose={() => setIsAddPageModalOpen(false)}
+        onAddPage={handleAddPageFromModal}
+        suggestedPageNumber={pages.length + 1}
       />
 
       {/* Fullscreen Client Presentation & Slide Deck View */}

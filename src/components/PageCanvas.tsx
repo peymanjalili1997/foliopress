@@ -128,7 +128,11 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
   scale = 1,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const uploadTargetRef = useRef<{ blockId: string; isSecondary?: boolean } | null>(null);
+  const uploadTargetRef = useRef<{
+    blockId: string;
+    field: 'imageUrl' | 'secondaryImageUrl' | 'beforeImageUrl' | 'afterImageUrl' | 'gridImage';
+    gridIndex?: number;
+  } | null>(null);
 
   const activePageSizeId = page.pageSizeOverride || globalSettings.pageSize;
   const sizeSpec =
@@ -140,8 +144,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
   const borderCol = globalSettings.borderColor;
   const accentCol = globalSettings.accentColor;
 
-  const triggerImageUpload = (blockId: string, isSecondary = false) => {
-    uploadTargetRef.current = { blockId, isSecondary };
+  const triggerImageUpload = (
+    blockId: string,
+    field: 'imageUrl' | 'secondaryImageUrl' | 'beforeImageUrl' | 'afterImageUrl' | 'gridImage' = 'imageUrl',
+    gridIndex?: number
+  ) => {
+    uploadTargetRef.current = { blockId, field, gridIndex };
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
       fileInputRef.current.click();
@@ -156,8 +164,24 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      if (target.isSecondary) {
+      const targetBlock = page.blocks.find((b) => b.id === target.blockId);
+
+      if (target.field === 'secondaryImageUrl') {
         onUpdateBlock(target.blockId, { secondaryImageUrl: dataUrl });
+      } else if (target.field === 'beforeImageUrl') {
+        onUpdateBlock(target.blockId, { beforeImageUrl: dataUrl, imageUrl: dataUrl });
+      } else if (target.field === 'afterImageUrl') {
+        onUpdateBlock(target.blockId, { afterImageUrl: dataUrl, secondaryImageUrl: dataUrl });
+      } else if (target.field === 'gridImage' && typeof target.gridIndex === 'number' && targetBlock) {
+        const currentGrid: GridImageItem[] = targetBlock.gridImages || [
+          { id: 'img-1', url: CURATED_VISUAL_PLATES[1].url, caption: 'Detail A — Raw Stone Texture' },
+          { id: 'img-2', url: CURATED_VISUAL_PLATES[2].url, caption: 'Detail B — Anodized Bevel' },
+          { id: 'img-3', url: CURATED_VISUAL_PLATES[3].url, caption: 'Detail C — Axonometric Joinery' },
+        ];
+        const updatedGrid = currentGrid.map((item, idx) =>
+          idx === target.gridIndex ? { ...item, url: dataUrl } : item
+        );
+        onUpdateBlock(target.blockId, { gridImages: updatedGrid });
       } else {
         onUpdateBlock(target.blockId, { imageUrl: dataUrl });
       }
@@ -168,7 +192,8 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
   const handleDropFile = (
     e: React.DragEvent<HTMLDivElement>,
     blockId: string,
-    isSecondary = false
+    field: 'imageUrl' | 'secondaryImageUrl' | 'beforeImageUrl' | 'afterImageUrl' | 'gridImage' = 'imageUrl',
+    gridIndex?: number
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -177,8 +202,24 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      if (isSecondary) {
+      const targetBlock = page.blocks.find((b) => b.id === blockId);
+
+      if (field === 'secondaryImageUrl') {
         onUpdateBlock(blockId, { secondaryImageUrl: dataUrl });
+      } else if (field === 'beforeImageUrl') {
+        onUpdateBlock(blockId, { beforeImageUrl: dataUrl, imageUrl: dataUrl });
+      } else if (field === 'afterImageUrl') {
+        onUpdateBlock(blockId, { afterImageUrl: dataUrl, secondaryImageUrl: dataUrl });
+      } else if (field === 'gridImage' && typeof gridIndex === 'number' && targetBlock) {
+        const currentGrid: GridImageItem[] = targetBlock.gridImages || [
+          { id: 'img-1', url: CURATED_VISUAL_PLATES[1].url, caption: 'Detail A — Raw Stone Texture' },
+          { id: 'img-2', url: CURATED_VISUAL_PLATES[2].url, caption: 'Detail B — Anodized Bevel' },
+          { id: 'img-3', url: CURATED_VISUAL_PLATES[3].url, caption: 'Detail C — Axonometric Joinery' },
+        ];
+        const updatedGrid = currentGrid.map((item, idx) =>
+          idx === gridIndex ? { ...item, url: dataUrl } : item
+        );
+        onUpdateBlock(blockId, { gridImages: updatedGrid });
       } else {
         onUpdateBlock(blockId, { imageUrl: dataUrl });
       }
@@ -280,7 +321,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
       <div className="flex flex-col gap-2 w-full">
         <div
           onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => handleDropFile(e, block.id, isSecondary)}
+          onDrop={(e) => handleDropFile(e, block.id, isSecondary ? 'secondaryImageUrl' : 'imageUrl')}
           style={{
             height: `${imgStyle.height}px`,
             borderRadius: `${imgStyle.borderRadius}px`,
@@ -317,7 +358,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  triggerImageUpload(block.id, isSecondary);
+                  triggerImageUpload(block.id, isSecondary ? 'secondaryImageUrl' : 'imageUrl');
                 }}
                 className="flex items-center gap-1 text-[11px] font-medium hover:text-amber-300 transition-colors whitespace-nowrap"
               >
@@ -752,7 +793,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
 
             <div
               onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => handleDropFile(e, block.id, false)}
+              onDrop={(e) => handleDropFile(e, block.id, 'imageUrl')}
               className="w-full flex justify-center cursor-pointer"
             >
               <MockupFrame
@@ -931,17 +972,33 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     {block.beforeLabel || 'BEFORE RECONSTRUCTION'}
                   </span>
                   {!isExportMode && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        triggerImageUpload(block.id, false);
-                      }}
-                      className="text-[10px] text-stone-500 hover:text-stone-900 flex items-center gap-1"
-                    >
-                      <Upload className="w-3 h-3" />
-                      <span>Upload</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerImageUpload(block.id, 'beforeImageUrl');
+                        }}
+                        className="text-[10px] text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded flex items-center gap-1 transition-colors font-medium"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>Upload</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const currentIdx = CURATED_VISUAL_PLATES.findIndex((p) => p.url === beforeImg);
+                          const nextPlate = CURATED_VISUAL_PLATES[(currentIdx + 1) % CURATED_VISUAL_PLATES.length];
+                          onUpdateBlock(block.id, { beforeImageUrl: nextPlate.url, imageUrl: nextPlate.url });
+                        }}
+                        className="text-[10px] text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded flex items-center gap-1 transition-colors"
+                        title="Swap Curated Plate"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Swap</span>
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div
@@ -949,7 +1006,9 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     height: `${block.imageStyle?.height || 280}px`,
                     borderRadius: `${block.imageStyle?.borderRadius || 0}px`,
                   }}
-                  className="w-full overflow-hidden bg-stone-200/50 relative shadow-inner"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDropFile(e, block.id, 'beforeImageUrl')}
+                  className="w-full overflow-hidden bg-stone-200/50 relative shadow-inner group/beforeimg rounded-sm"
                 >
                   <img
                     src={beforeImg}
@@ -957,6 +1016,17 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     className="w-full h-full object-cover"
                     style={{ filter: getFilterCss(block.imageStyle?.filter) }}
                   />
+                  {!isExportMode && (
+                    <div
+                      onClick={() => triggerImageUpload(block.id, 'beforeImageUrl')}
+                      className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover/beforeimg:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    >
+                      <span className="bg-stone-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded shadow flex items-center gap-1.5">
+                        <Upload className="w-3 h-3" />
+                        <span>Change Before Photo</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {renderEditableText(
                   block.beforeCaption || '',
@@ -981,17 +1051,33 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     {block.afterLabel || 'FINAL ARCHITECTURAL COMPLETION'}
                   </span>
                   {!isExportMode && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        triggerImageUpload(block.id, true);
-                      }}
-                      className="text-[10px] text-stone-500 hover:text-stone-900 flex items-center gap-1"
-                    >
-                      <Upload className="w-3 h-3" />
-                      <span>Upload</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerImageUpload(block.id, 'afterImageUrl');
+                        }}
+                        className="text-[10px] text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded flex items-center gap-1 transition-colors font-medium"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>Upload</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const currentIdx = CURATED_VISUAL_PLATES.findIndex((p) => p.url === afterImg);
+                          const nextPlate = CURATED_VISUAL_PLATES[(currentIdx + 1) % CURATED_VISUAL_PLATES.length];
+                          onUpdateBlock(block.id, { afterImageUrl: nextPlate.url, secondaryImageUrl: nextPlate.url });
+                        }}
+                        className="text-[10px] text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded flex items-center gap-1 transition-colors"
+                        title="Swap Curated Plate"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Swap</span>
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div
@@ -999,7 +1085,9 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     height: `${block.imageStyle?.height || 280}px`,
                     borderRadius: `${block.imageStyle?.borderRadius || 0}px`,
                   }}
-                  className="w-full overflow-hidden bg-stone-200/50 relative shadow-inner"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDropFile(e, block.id, 'afterImageUrl')}
+                  className="w-full overflow-hidden bg-stone-200/50 relative shadow-inner group/afterimg rounded-sm"
                 >
                   <img
                     src={afterImg}
@@ -1007,6 +1095,17 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
                     className="w-full h-full object-cover"
                     style={{ filter: getFilterCss(block.imageStyle?.filter) }}
                   />
+                  {!isExportMode && (
+                    <div
+                      onClick={() => triggerImageUpload(block.id, 'afterImageUrl')}
+                      className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover/afterimg:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    >
+                      <span className="bg-stone-900/90 text-white text-[11px] font-medium px-2.5 py-1 rounded shadow flex items-center gap-1.5">
+                        <Upload className="w-3 h-3" />
+                        <span>Change After Photo</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {renderEditableText(
                   block.afterCaption || '',
@@ -1183,55 +1282,150 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
           { id: 'img-2', url: CURATED_VISUAL_PLATES[2].url, caption: 'Detail B — Anodized Bevel' },
           { id: 'img-3', url: CURATED_VISUAL_PLATES[3].url, caption: 'Detail C — Axonometric Joinery' },
         ];
+        const columns = block.gridColumns || 3;
+        const colClass = columns === 2 ? 'grid-cols-2' : columns === 4 ? 'grid-cols-4' : 'grid-cols-3';
 
         return (
-          <div className="grid grid-cols-3 gap-4 w-full">
-            {gridItems.map((item, idx) => (
-              <div key={item.id} className="flex flex-col gap-1.5">
-                <div
-                  style={{
-                    height: `${block.imageStyle?.height || 210}px`,
-                    borderRadius: `${block.imageStyle?.borderRadius || 0}px`,
+          <div className="space-y-3 w-full">
+            {/* Grid Controls (Columns & Add Photo) */}
+            {!isExportMode && (
+              <div className="flex items-center justify-between pb-1.5 border-b border-stone-200/70 text-xs">
+                <div className="flex items-center gap-2">
+                  <span
+                    style={{ fontFamily: globalSettings.monoFont, color: mutedInk }}
+                    className="text-[10px] tracking-wider uppercase font-semibold"
+                  >
+                    COLUMNS:
+                  </span>
+                  <div className="inline-flex rounded-md p-0.5 bg-stone-100 border border-stone-200/80">
+                    {([2, 3, 4] as const).map((cols) => (
+                      <button
+                        key={cols}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUpdateBlock(block.id, { gridColumns: cols });
+                        }}
+                        className={`px-2 py-0.5 text-[11px] rounded transition-all ${
+                          columns === cols
+                            ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                            : 'text-stone-500 hover:text-stone-800'
+                        }`}
+                      >
+                        {cols} Col
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextPlates = CURATED_VISUAL_PLATES;
+                    const newPlate = nextPlates[(gridItems.length + 1) % nextPlates.length];
+                    const newItem: GridImageItem = {
+                      id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                      url: newPlate.url,
+                      caption: `Detail ${String.fromCharCode(65 + (gridItems.length % 26))} — New Detail`,
+                    };
+                    onUpdateBlock(block.id, { gridImages: [...gridItems, newItem] });
                   }}
-                  className="w-full overflow-hidden bg-stone-200/50 shadow-inner relative group/gridimg"
+                  className="text-[11px] font-medium text-stone-700 hover:text-stone-950 flex items-center gap-1 bg-stone-100 hover:bg-stone-200 px-2.5 py-1 rounded transition-colors"
                 >
-                  <img src={item.url} alt={item.caption} className="w-full h-full object-cover" />
-                  {!isExportMode && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const nextPlates = CURATED_VISUAL_PLATES;
-                        const nextItem = nextPlates[(idx + 2) % nextPlates.length];
-                        const nextGrid = gridItems.map((it, i) =>
-                          i === idx ? { ...it, url: nextItem.url } : it
-                        );
-                        onUpdateBlock(block.id, { gridImages: nextGrid });
-                      }}
-                      className="absolute bottom-2 right-2 opacity-0 group-hover/gridimg:opacity-100 px-2 py-1 bg-stone-900/80 text-white text-[10px] rounded transition-opacity"
-                    >
-                      Swap Plate
-                    </button>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Photo ({gridItems.length})</span>
+                </button>
+              </div>
+            )}
+
+            {/* Grid Photo Items */}
+            <div className={`grid ${colClass} gap-4 w-full`}>
+              {gridItems.map((item, idx) => (
+                <div key={item.id || idx} className="flex flex-col gap-1.5 group/gridimg relative">
+                  <div
+                    style={{
+                      height: `${block.imageStyle?.height || 210}px`,
+                      borderRadius: `${block.imageStyle?.borderRadius || 0}px`,
+                    }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => handleDropFile(e, block.id, 'gridImage', idx)}
+                    className="w-full overflow-hidden bg-stone-200/50 shadow-inner relative rounded-sm"
+                  >
+                    <img
+                      src={item.url}
+                      alt={item.caption || `Detail ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      style={{ filter: getFilterCss(block.imageStyle?.filter) }}
+                    />
+
+                    {!isExportMode && (
+                      <div className="absolute inset-0 bg-stone-950/45 opacity-0 group-hover/gridimg:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerImageUpload(block.id, 'gridImage', idx);
+                          }}
+                          className="px-2 py-1 bg-white text-stone-900 text-[10px] font-medium rounded shadow flex items-center gap-1 hover:bg-stone-100 transition-colors"
+                          title="Upload Custom Photo from Computer"
+                        >
+                          <Upload className="w-3 h-3" />
+                          <span>Upload</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const nextPlates = CURATED_VISUAL_PLATES;
+                            const nextItem = nextPlates[(idx + 2) % nextPlates.length];
+                            const nextGrid = gridItems.map((it, i) =>
+                              i === idx ? { ...it, url: nextItem.url } : it
+                            );
+                            onUpdateBlock(block.id, { gridImages: nextGrid });
+                          }}
+                          className="px-2 py-1 bg-stone-900 text-white text-[10px] font-medium rounded shadow flex items-center gap-1 hover:bg-stone-800 transition-colors"
+                          title="Cycle Curated Architectural Plate"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>Swap</span>
+                        </button>
+                        {gridItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const nextGrid = gridItems.filter((_, i) => i !== idx);
+                              onUpdateBlock(block.id, { gridImages: nextGrid });
+                            }}
+                            className="p-1 bg-red-600 text-white text-[10px] rounded shadow hover:bg-red-700 transition-colors"
+                            title="Remove Photo"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {renderEditableText(
+                    item.caption || '',
+                    (val) => {
+                      const nextGrid = gridItems.map((it, i) =>
+                        i === idx ? { ...it, caption: val } : it
+                      );
+                      onUpdateBlock(block.id, { gridImages: nextGrid });
+                    },
+                    {
+                      fontFamily: globalSettings.monoFont,
+                      fontSize: '10px',
+                      color: mutedInk,
+                    },
+                    'Detail caption...',
+                    false
                   )}
                 </div>
-                {renderEditableText(
-                  item.caption || '',
-                  (val) => {
-                    const nextGrid = gridItems.map((it, i) =>
-                      i === idx ? { ...it, caption: val } : it
-                    );
-                    onUpdateBlock(block.id, { gridImages: nextGrid });
-                  },
-                  {
-                    fontFamily: globalSettings.monoFont,
-                    fontSize: '10px',
-                    color: mutedInk,
-                  },
-                  'Detail caption...',
-                  false
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         );
       }
@@ -1303,6 +1497,17 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({
         {/* Main Page Content Blocks */}
         <div className="flex-1 flex flex-col justify-between gap-6 min-h-0">
           <div className="flex flex-col gap-6">
+            {page.blocks.length === 0 && !isExportMode && (
+              <div className="py-20 px-6 border-2 border-dashed border-stone-200/80 rounded-xl text-center flex flex-col items-center justify-center my-auto">
+                <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-3">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-semibold text-stone-800">Blank Page Canvas · صفحه خالی</h3>
+                <p className="text-xs text-stone-500 max-w-sm mt-1.5 leading-relaxed">
+                  Use the top formatting toolbar to insert headlines, editorial copy, media plates, mockups, or photo grids.
+                </p>
+              </div>
+            )}
             {page.blocks.map((block, bIdx) => {
               const isSelected = !isExportMode && selectedBlockId === block.id;
 
