@@ -4,25 +4,41 @@ import {
   AlignJustify,
   AlignLeft,
   AlignRight,
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowUp,
+  Bold,
   Briefcase,
   Check,
+  Columns,
+  Copy,
   FilePlus2,
+  FileText,
   Grid,
+  Grid3X3,
+  Heading1,
   Image as ImageIcon,
+  Italic,
+  Laptop,
   Layers,
   LayoutTemplate,
   ListOrdered,
+  MessageSquareQuote,
+  Minus,
   Palette,
   Plus,
+  QrCode,
   Quote,
   RefreshCw,
   Search,
   ShieldCheck,
   Sliders,
   Sparkles,
+  SplitSquareVertical,
   Star,
   Trash2,
   Type,
+  Underline,
   Upload,
 } from 'lucide-react';
 import {
@@ -35,6 +51,8 @@ import {
   createUid,
 } from '../data/editorialAssets';
 import {
+  BlockType,
+  ColorSwatch,
   GlobalDocumentSettings,
   ImageFilterType,
   ImageStyle,
@@ -44,13 +62,151 @@ import {
   PortfolioPage,
   ProcessStepItem,
   ServiceOfferItem,
+  SpecItem,
   TextStyle,
   TextTargetField,
 } from '../types/portfolio';
 import { GoogleFontPicker } from './GoogleFontPicker';
 import { getCleanFontName, loadGoogleFont, searchGoogleFonts } from '../utils/googleFonts';
 
-export type InspectorTab = 'element' | 'page' | 'global';
+export type InspectorTab = 'blocks' | 'element' | 'page' | 'global';
+
+interface BlockDefinition {
+  type: BlockType;
+  label: string;
+  category: 'text' | 'media' | 'structure' | 'accent';
+  description: string;
+  icon: React.ElementType;
+}
+
+const BLOCK_DEFINITIONS: BlockDefinition[] = [
+  // Editorial & Typography
+  {
+    type: 'heading',
+    label: 'Section Heading',
+    category: 'text',
+    description: 'Headline, kicker badge & subtitle note',
+    icon: Heading1,
+  },
+  {
+    type: 'paragraph',
+    label: 'Body Paragraph',
+    category: 'text',
+    description: 'Editorial narrative & project description',
+    icon: FileText,
+  },
+  {
+    type: 'two-column-text',
+    label: 'Two-Column Spread',
+    category: 'text',
+    description: 'Balanced dual-column editorial copy',
+    icon: Columns,
+  },
+  {
+    type: 'pull-quote',
+    label: 'Pull Quote',
+    category: 'text',
+    description: 'Prominent quote with author attribution',
+    icon: Quote,
+  },
+
+  // Media & Visuals
+  {
+    type: 'image',
+    label: 'Image Plate',
+    category: 'media',
+    description: 'Full-width visual plate with archival caption',
+    icon: ImageIcon,
+  },
+  {
+    type: 'dual-image',
+    label: 'Dual Image Spread',
+    category: 'media',
+    description: 'Side-by-side photos with twin captions',
+    icon: Grid,
+  },
+  {
+    type: 'split-media-text',
+    label: 'Split Media + Text',
+    category: 'media',
+    description: 'Side-by-side photo paired with narrative',
+    icon: SplitSquareVertical,
+  },
+  {
+    type: 'device-mockup',
+    label: 'Device Mockup',
+    category: 'media',
+    description: 'MacBook, iPhone, or iPad screen frame',
+    icon: Laptop,
+  },
+  {
+    type: 'before-after',
+    label: 'Before / After',
+    category: 'media',
+    description: 'Dual state comparison plate with labels',
+    icon: ArrowLeftRight,
+  },
+  {
+    type: 'multi-photo-grid',
+    label: 'Photo Detail Grid',
+    category: 'media',
+    description: '2, 3, or 4 column thumbnail showcase',
+    icon: Grid3X3,
+  },
+
+  // Case Study & Methodology
+  {
+    type: 'client-testimonial',
+    label: 'Client Testimonial',
+    category: 'structure',
+    description: 'Verified review, 5-star rating & NDA badge',
+    icon: MessageSquareQuote,
+  },
+  {
+    type: 'process-steps',
+    label: 'Process & Strategy',
+    category: 'structure',
+    description: 'Multi-stage workflow & execution steps',
+    icon: ListOrdered,
+  },
+  {
+    type: 'services-grid',
+    label: 'Services Matrix',
+    category: 'structure',
+    description: 'Capabilities cards with skill tags',
+    icon: Briefcase,
+  },
+  {
+    type: 'spec-grid',
+    label: 'Project Passport',
+    category: 'structure',
+    description: 'Key facts, scope, year & location metadata',
+    icon: Layers,
+  },
+
+  // Design Accents & Utilities
+  {
+    type: 'color-palette',
+    label: 'Color Palette',
+    category: 'accent',
+    description: 'Material swatches with hex color codes',
+    icon: Palette,
+  },
+  {
+    type: 'qr-code',
+    label: 'Scannable QR Code',
+    category: 'accent',
+    description: 'Scan link with interactive title & subtitle',
+    icon: QrCode,
+  },
+  {
+    type: 'divider',
+    label: 'Editorial Divider',
+    category: 'accent',
+    description: 'Hairline rule & breathing whitespace',
+    icon: Minus,
+  },
+];
 
 interface InspectorSidebarProps {
   activeTab: InspectorTab;
@@ -61,6 +217,9 @@ interface InspectorSidebarProps {
   onSelectTextTarget?: (target: TextTargetField) => void;
   globalSettings: GlobalDocumentSettings;
   onUpdateBlock: (blockId: string, patch: Partial<PortfolioBlock>) => void;
+  onMoveBlock?: (blockId: string, direction: 'up' | 'down') => void;
+  onDuplicateBlock?: (blockId: string) => void;
+  onDeleteBlock?: (blockId: string) => void;
   onUpdateTextStyle: (patch: Partial<TextStyle>, target?: TextTargetField) => void;
   onUpdateImageStyle: (patch: Partial<ImageStyle>) => void;
   onUpdatePage: (patch: Partial<PortfolioPage>) => void;
@@ -69,6 +228,8 @@ interface InspectorSidebarProps {
   onUpdateGlobalSettings: (patch: Partial<GlobalDocumentSettings>) => void;
   onApplyGlobalFontsToAllPages: (headingFont: string, bodyFont: string, monoFont: string) => void;
   onOpenStockLibrary?: () => void;
+  onAddBlock: (type: BlockType) => void;
+  onAiPolishText?: (style: 'editorial' | 'concise' | 'technical' | 'grammar') => void;
 }
 
 export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
@@ -80,6 +241,9 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   onSelectTextTarget,
   globalSettings,
   onUpdateBlock,
+  onMoveBlock,
+  onDuplicateBlock,
+  onDeleteBlock,
   onUpdateTextStyle,
   onUpdateImageStyle,
   onUpdatePage,
@@ -88,6 +252,8 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   onUpdateGlobalSettings,
   onApplyGlobalFontsToAllPages,
   onOpenStockLibrary,
+  onAddBlock,
+  onAiPolishText,
 }) => {
   const primaryUploadRef = useRef<HTMLInputElement | null>(null);
   const secondaryUploadRef = useRef<HTMLInputElement | null>(null);
@@ -205,19 +371,107 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
     return selectedBlock.textStyle || fallbackStyle;
   };
 
+  const renderBlockLibrary = () => {
+    const categories: Array<{ id: string; label: string; types: BlockType[] }> = [
+      {
+        id: 'text',
+        label: 'Typography & Narrative',
+        types: ['heading', 'paragraph', 'two-column-text', 'pull-quote'],
+      },
+      {
+        id: 'media',
+        label: 'Visual Plates & Media',
+        types: [
+          'image',
+          'dual-image',
+          'split-media-text',
+          'device-mockup',
+          'before-after',
+          'multi-photo-grid',
+        ],
+      },
+      {
+        id: 'structure',
+        label: 'Case Study & Methodology',
+        types: ['client-testimonial', 'process-steps', 'services-grid', 'spec-grid'],
+      },
+      {
+        id: 'accent',
+        label: 'Design Accents & Links',
+        types: ['color-palette', 'qr-code', 'divider'],
+      },
+    ];
+
+    return (
+      <div className="space-y-4">
+        {categories.map((cat) => {
+          const items = BLOCK_DEFINITIONS.filter((b) => cat.types.includes(b.type));
+          return (
+            <div key={cat.id} className="space-y-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-stone-400 block px-0.5">
+                {cat.label}
+              </span>
+              <div className="grid grid-cols-1 gap-1.5">
+                {items.map((def) => {
+                  const Icon = def.icon;
+                  return (
+                    <button
+                      key={def.type}
+                      type="button"
+                      onClick={() => {
+                        onAddBlock(def.type);
+                        onTabChange('element');
+                      }}
+                      className="w-full p-2 bg-stone-50 hover:bg-stone-100/90 border border-stone-200/80 hover:border-stone-400 rounded-lg flex items-center gap-2.5 transition-all text-left group cursor-pointer"
+                    >
+                      <div className="w-7 h-7 rounded-md bg-white border border-stone-200 flex items-center justify-center shrink-0 group-hover:border-stone-900 group-hover:bg-stone-900 transition-colors">
+                        <Icon className="w-3.5 h-3.5 text-stone-700 group-hover:text-white transition-colors" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold text-stone-900 flex items-center justify-between">
+                          <span>{def.label}</span>
+                          <Plus className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="text-[10px] text-stone-500 leading-tight truncate">
+                          {def.description}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const activeStyle = getActiveStyle();
 
   return (
-    <aside className="w-80 bg-white border-l border-stone-200/90 flex flex-col h-full shrink-0 select-none">
+    <aside className="w-84 sm:w-88 bg-white border-l border-stone-200/90 flex flex-col h-full shrink-0 select-none">
       {/* Segmented Inspector Tabs */}
       <div className="p-2.5 border-b border-stone-200">
-        <div className="grid grid-cols-3 gap-1 p-1 bg-stone-100 rounded-lg">
+        <div className="grid grid-cols-4 gap-1 p-1 bg-stone-100 rounded-lg">
+          <button
+            type="button"
+            onClick={() => onTabChange('blocks')}
+            className={`px-1.5 py-1.5 text-[11px] font-medium rounded-md transition-colors flex items-center justify-center gap-1 whitespace-nowrap ${
+              activeTab === 'blocks'
+                ? 'bg-white text-stone-900 shadow-xs font-semibold'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5 text-amber-600" />
+            <span>Blocks</span>
+          </button>
           <button
             type="button"
             onClick={() => onTabChange('element')}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            className={`px-1.5 py-1.5 text-[11px] font-medium rounded-md transition-colors flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'element'
-                ? 'bg-white text-stone-900 shadow-xs'
+                ? 'bg-white text-stone-900 shadow-xs font-semibold'
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -227,9 +481,9 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
           <button
             type="button"
             onClick={() => onTabChange('page')}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            className={`px-1.5 py-1.5 text-[11px] font-medium rounded-md transition-colors flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'page'
-                ? 'bg-white text-stone-900 shadow-xs'
+                ? 'bg-white text-stone-900 shadow-xs font-semibold'
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -239,9 +493,9 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
           <button
             type="button"
             onClick={() => onTabChange('global')}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            className={`px-1.5 py-1.5 text-[11px] font-medium rounded-md transition-colors flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'global'
-                ? 'bg-white text-stone-900 shadow-xs'
+                ? 'bg-white text-stone-900 shadow-xs font-semibold'
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -253,20 +507,143 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
 
       {/* Scrollable Inspector Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* TAB 0: BLOCKS LIBRARY */}
+        {activeTab === 'blocks' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-200">
+              <div>
+                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider font-mono">
+                  Block Library
+                </h3>
+                <p className="text-[11px] text-stone-500 mt-0.5">
+                  Click any block to insert into current page
+                </p>
+              </div>
+            </div>
+            {renderBlockLibrary()}
+          </div>
+        )}
+
         {/* TAB 1: ELEMENT INSPECTOR */}
         {activeTab === 'element' && (
           <>
             {!selectedBlock ? (
-              <div className="py-10 px-4 text-center border border-dashed border-stone-200 rounded-lg space-y-2">
-                <Layers className="w-6 h-6 text-stone-400 mx-auto" />
-                <p className="text-xs font-medium text-stone-700">No Block Selected</p>
-                <p className="text-[11px] text-stone-500 leading-relaxed">
-                  Click any heading, text paragraph, or image plate on the page canvas to customize its
-                  English font, sizing, or visual framing.
-                </p>
+              <div className="space-y-4">
+                <div className="p-3 bg-stone-50 border border-stone-200 rounded-lg space-y-1">
+                  <p className="text-xs font-semibold text-stone-800 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-stone-500" />
+                    <span>No Block Selected</span>
+                  </p>
+                  <p className="text-[11px] text-stone-600 leading-relaxed">
+                    Click any element on the page canvas to edit its properties, or choose a block below to add to this page:
+                  </p>
+                </div>
+                {renderBlockLibrary()}
               </div>
             ) : (
               <>
+                {/* Block Header & Action Controls */}
+                <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-stone-900 text-white">
+                      {selectedBlock.type}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onTabChange('blocks')}
+                      className="text-[11px] text-stone-600 hover:text-stone-900 flex items-center gap-0.5 font-medium ml-1"
+                      title="Add another block to this page"
+                    >
+                      <Plus className="w-3 h-3 text-amber-600" />
+                      <span>Add Block</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-0.5 text-stone-500">
+                    {onMoveBlock && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onMoveBlock(selectedBlock.id, 'up')}
+                          className="p-1 hover:text-stone-900 hover:bg-stone-100 rounded"
+                          title="Move Block Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onMoveBlock(selectedBlock.id, 'down')}
+                          className="p-1 hover:text-stone-900 hover:bg-stone-100 rounded"
+                          title="Move Block Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                    {onDuplicateBlock && (
+                      <button
+                        type="button"
+                        onClick={() => onDuplicateBlock(selectedBlock.id)}
+                        className="p-1 hover:text-stone-900 hover:bg-stone-100 rounded"
+                        title="Duplicate Block"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {onDeleteBlock && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteBlock(selectedBlock.id)}
+                        className="p-1 hover:text-red-600 hover:bg-red-50 rounded"
+                        title="Delete Block"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI Text Polish Assistant */}
+                {onAiPolishText && (
+                  <div className="p-2.5 bg-gradient-to-r from-amber-500/10 via-stone-100 to-amber-500/5 rounded-lg border border-amber-200/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-stone-900 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>AI Writing & Tone Assistant</span>
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => onAiPolishText('editorial')}
+                        className="px-2 py-1 text-[11px] bg-white hover:bg-amber-50 border border-stone-200 rounded text-stone-800 font-medium text-left transition-colors"
+                      >
+                        ✨ Editorial Monograph
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onAiPolishText('concise')}
+                        className="px-2 py-1 text-[11px] bg-white hover:bg-amber-50 border border-stone-200 rounded text-stone-800 font-medium text-left transition-colors"
+                      >
+                        ✂️ Concise & Crisp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onAiPolishText('technical')}
+                        className="px-2 py-1 text-[11px] bg-white hover:bg-amber-50 border border-stone-200 rounded text-stone-800 font-medium text-left transition-colors"
+                      >
+                        📐 Technical Specs
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onAiPolishText('grammar')}
+                        className="px-2 py-1 text-[11px] bg-white hover:bg-amber-50 border border-stone-200 rounded text-stone-800 font-medium text-left transition-colors"
+                      >
+                        🇬🇧 Fix English Flow
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Image Controls if Block Contains Image */}
                 {hasImage && (
                   <div className="space-y-4 pb-5 border-b border-stone-200">
@@ -892,6 +1269,363 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                   </div>
                 )}
 
+                {/* Split Media & Text Settings */}
+                {selectedBlock.type === 'split-media-text' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                      <SplitSquareVertical className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Split Media & Text Layout</span>
+                    </h3>
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Image Position</label>
+                      <div className="grid grid-cols-2 gap-1 p-0.5 bg-stone-100 rounded-md">
+                        {(['image-left', 'image-right'] as const).map((dir) => (
+                          <button
+                            key={dir}
+                            type="button"
+                            onClick={() => onUpdateBlock(selectedBlock.id, { splitDirection: dir })}
+                            className={`py-1 text-xs font-medium rounded transition-colors ${
+                              (selectedBlock.splitDirection || 'image-right') === dir
+                                ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                                : 'text-stone-600'
+                            }`}
+                          >
+                            {dir === 'image-left' ? 'Image Left' : 'Image Right'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Column Proportion</label>
+                      <div className="grid grid-cols-3 gap-1 p-0.5 bg-stone-100 rounded-md">
+                        {(['50-50', '60-40', '40-60'] as const).map((ratio) => (
+                          <button
+                            key={ratio}
+                            type="button"
+                            onClick={() => onUpdateBlock(selectedBlock.id, { splitRatio: ratio })}
+                            className={`py-1 text-xs font-medium rounded transition-colors ${
+                              (selectedBlock.splitRatio || '50-50') === ratio
+                                ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                                : 'text-stone-600'
+                            }`}
+                          >
+                            {ratio}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Device Mockup Settings */}
+                {selectedBlock.type === 'device-mockup' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                      <Laptop className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Device Mockup Frame</span>
+                    </h3>
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Device Type</label>
+                      <div className="grid grid-cols-3 gap-1 p-0.5 bg-stone-100 rounded-md">
+                        {(['macbook', 'iphone', 'ipad'] as const).map((dev) => (
+                          <button
+                            key={dev}
+                            type="button"
+                            onClick={() => onUpdateBlock(selectedBlock.id, { deviceType: dev })}
+                            className={`py-1 text-xs font-medium rounded transition-colors capitalize ${
+                              (selectedBlock.deviceType || 'macbook') === dev
+                                ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                                : 'text-stone-600'
+                            }`}
+                          >
+                            {dev}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Before / After Settings */}
+                {selectedBlock.type === 'before-after' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                      <ArrowLeftRight className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Before / After Comparison Labels</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-stone-500 mb-0.5">"Before" Label</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.beforeLabel || ''}
+                          onChange={(e) => onUpdateBlock(selectedBlock.id, { beforeLabel: e.target.value })}
+                          placeholder="BEFORE"
+                          className="w-full h-7 px-2 text-xs bg-stone-50 border border-stone-200 rounded font-mono text-[10px]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-stone-500 mb-0.5">"After" Label</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.afterLabel || ''}
+                          onChange={(e) => onUpdateBlock(selectedBlock.id, { afterLabel: e.target.value })}
+                          placeholder="AFTER"
+                          className="w-full h-7 px-2 text-xs bg-stone-50 border border-stone-200 rounded font-mono text-[10px]"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-stone-500 mb-0.5">Before Caption</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.beforeCaption || ''}
+                          onChange={(e) => onUpdateBlock(selectedBlock.id, { beforeCaption: e.target.value })}
+                          placeholder="Initial state..."
+                          className="w-full h-7 px-2 text-xs bg-stone-50 border border-stone-200 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-stone-500 mb-0.5">After Caption</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.afterCaption || ''}
+                          onChange={(e) => onUpdateBlock(selectedBlock.id, { afterCaption: e.target.value })}
+                          placeholder="Finished outcome..."
+                          className="w-full h-7 px-2 text-xs bg-stone-50 border border-stone-200 rounded"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Specs Grid Settings */}
+                {selectedBlock.type === 'spec-grid' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Project Specifications</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentSpecs = selectedBlock.specs || [];
+                          const newSpec: SpecItem = {
+                            id: typeof createUid === 'function' ? createUid('sp') : `sp-${Date.now()}`,
+                            label: 'SPEC LABEL',
+                            value: 'Detail value',
+                          };
+                          onUpdateBlock(selectedBlock.id, { specs: [...currentSpecs, newSpec] });
+                        }}
+                        className="text-[11px] font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Spec</span>
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(selectedBlock.specs || []).map((spec, sIdx) => (
+                        <div key={spec.id || sIdx} className="flex items-center gap-2 p-1.5 bg-stone-50 border border-stone-200 rounded">
+                          <input
+                            type="text"
+                            value={spec.label}
+                            onChange={(e) => {
+                              const next = (selectedBlock.specs || []).map((s, i) =>
+                                i === sIdx ? { ...s, label: e.target.value } : s
+                              );
+                              onUpdateBlock(selectedBlock.id, { specs: next });
+                            }}
+                            placeholder="LABEL"
+                            className="w-1/3 h-6 px-1.5 text-[10px] font-mono uppercase bg-white border border-stone-200 rounded"
+                          />
+                          <input
+                            type="text"
+                            value={spec.value}
+                            onChange={(e) => {
+                              const next = (selectedBlock.specs || []).map((s, i) =>
+                                i === sIdx ? { ...s, value: e.target.value } : s
+                              );
+                              onUpdateBlock(selectedBlock.id, { specs: next });
+                            }}
+                            placeholder="Value..."
+                            className="flex-1 h-6 px-1.5 text-xs bg-white border border-stone-200 rounded"
+                          />
+                          {(selectedBlock.specs || []).length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = (selectedBlock.specs || []).filter((_, i) => i !== sIdx);
+                                onUpdateBlock(selectedBlock.id, { specs: next });
+                              }}
+                              className="p-1 text-stone-400 hover:text-red-500"
+                              title="Remove Spec"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Color Palette Settings */}
+                {selectedBlock.type === 'color-palette' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Archival Color Palette</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentSwatches = selectedBlock.swatches || [];
+                          const newSwatch: ColorSwatch = {
+                            id: typeof createUid === 'function' ? createUid('sw') : `sw-${Date.now()}`,
+                            hex: '#334155',
+                            name: 'Mineral Tint',
+                            code: 'Accent Color',
+                          };
+                          onUpdateBlock(selectedBlock.id, { swatches: [...currentSwatches, newSwatch] });
+                        }}
+                        className="text-[11px] font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Swatch</span>
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(selectedBlock.swatches || []).map((sw, swIdx) => (
+                        <div key={sw.id || swIdx} className="flex items-center gap-2 p-1.5 bg-stone-50 border border-stone-200 rounded">
+                          <input
+                            type="color"
+                            value={sw.hex}
+                            onChange={(e) => {
+                              const next = (selectedBlock.swatches || []).map((s, i) =>
+                                i === swIdx ? { ...s, hex: e.target.value } : s
+                              );
+                              onUpdateBlock(selectedBlock.id, { swatches: next });
+                            }}
+                            className="w-7 h-7 rounded border border-stone-300 cursor-pointer p-0 shrink-0 bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={sw.hex}
+                            onChange={(e) => {
+                              const next = (selectedBlock.swatches || []).map((s, i) =>
+                                i === swIdx ? { ...s, hex: e.target.value } : s
+                              );
+                              onUpdateBlock(selectedBlock.id, { swatches: next });
+                            }}
+                            className="w-16 h-6 px-1 text-[10px] font-mono uppercase bg-white border border-stone-200 rounded"
+                          />
+                          <input
+                            type="text"
+                            value={sw.name}
+                            onChange={(e) => {
+                              const next = (selectedBlock.swatches || []).map((s, i) =>
+                                i === swIdx ? { ...s, name: e.target.value } : s
+                              );
+                              onUpdateBlock(selectedBlock.id, { swatches: next });
+                            }}
+                            placeholder="Color Name"
+                            className="flex-1 h-6 px-1.5 text-xs bg-white border border-stone-200 rounded"
+                          />
+                          {(selectedBlock.swatches || []).length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = (selectedBlock.swatches || []).filter((_, i) => i !== swIdx);
+                                onUpdateBlock(selectedBlock.id, { swatches: next });
+                              }}
+                              className="p-1 text-stone-400 hover:text-red-500"
+                              title="Remove Swatch"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* QR Code Settings */}
+                {selectedBlock.type === 'qr-code' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                      <QrCode className="w-3.5 h-3.5 text-stone-500" />
+                      <span>QR Code Link & Details</span>
+                    </h3>
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Destination URL</label>
+                      <input
+                        type="text"
+                        value={selectedBlock.qrUrl || ''}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { qrUrl: e.target.value })}
+                        placeholder="https://example.com"
+                        className="w-full h-8 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-md font-mono text-[11px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Card Title</label>
+                      <input
+                        type="text"
+                        value={selectedBlock.qrTitle || ''}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { qrTitle: e.target.value })}
+                        placeholder="Scan to View Online..."
+                        className="w-full h-8 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-md font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-stone-500 mb-1">Subtitle</label>
+                      <textarea
+                        rows={2}
+                        value={selectedBlock.qrSubtitle || ''}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { qrSubtitle: e.target.value })}
+                        placeholder="Card description..."
+                        className="w-full p-2 text-xs bg-stone-50 border border-stone-200 rounded-md resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Divider Settings */}
+                {selectedBlock.type === 'divider' && (
+                  <div className="space-y-3 pb-5 border-b border-stone-200">
+                    <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                      <Minus className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Divider & Spacing</span>
+                    </h3>
+                    <div>
+                      <div className="flex justify-between text-[11px] text-stone-500 mb-1">
+                        <span>Vertical Spacing</span>
+                        <span className="font-mono text-stone-900">{selectedBlock.spacingHeight || 28}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={8}
+                        max={120}
+                        value={selectedBlock.spacingHeight || 28}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { spacingHeight: Number(e.target.value) })}
+                        className="w-full accent-stone-900 cursor-pointer"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedBlock.showLine !== false}
+                        onChange={(e) => onUpdateBlock(selectedBlock.id, { showLine: e.target.checked })}
+                        className="rounded border-stone-300 text-stone-900 focus:ring-0"
+                      />
+                      <span>Show Visible Hairline Rule</span>
+                    </label>
+                  </div>
+                )}
+
                 {/* Typography & Styling Section */}
                 <div className="space-y-4 pt-4 border-t border-stone-200">
                   <div className="flex items-center justify-between">
@@ -1031,8 +1765,65 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                     </div>
                   </div>
 
-                  {/* Text Alignment & Uppercase */}
-                  <div className="flex items-center justify-between gap-2 pt-1">
+                  {/* Text Formatting: Bold / Italic / Underline / Alignment / Uppercase */}
+                  <div className="flex items-center justify-between gap-1.5 pt-1">
+                    <div className="flex items-center p-0.5 bg-stone-100 rounded-md border border-stone-200/80">
+                      <button
+                        type="button"
+                        title="Bold (Weight 700)"
+                        onClick={() =>
+                          onUpdateTextStyle(
+                            { fontWeight: activeStyle.fontWeight >= 600 ? 400 : 700 },
+                            activeTextTarget
+                          )
+                        }
+                        className={`w-7 h-6 flex items-center justify-center rounded transition-colors ${
+                          activeStyle.fontWeight >= 600
+                            ? 'bg-stone-900 text-white shadow-2xs'
+                            : 'text-stone-700 hover:bg-white/70'
+                        }`}
+                      >
+                        <Bold className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Italic"
+                        onClick={() =>
+                          onUpdateTextStyle(
+                            { fontStyle: activeStyle.fontStyle === 'italic' ? 'normal' : 'italic' },
+                            activeTextTarget
+                          )
+                        }
+                        className={`w-7 h-6 flex items-center justify-center rounded transition-colors ${
+                          activeStyle.fontStyle === 'italic'
+                            ? 'bg-stone-900 text-white shadow-2xs'
+                            : 'text-stone-700 hover:bg-white/70'
+                        }`}
+                      >
+                        <Italic className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Underline"
+                        onClick={() =>
+                          onUpdateTextStyle(
+                            {
+                              textDecoration:
+                                activeStyle.textDecoration === 'underline' ? 'none' : 'underline',
+                            },
+                            activeTextTarget
+                          )
+                        }
+                        className={`w-7 h-6 flex items-center justify-center rounded transition-colors ${
+                          activeStyle.textDecoration === 'underline'
+                            ? 'bg-stone-900 text-white shadow-2xs'
+                            : 'text-stone-700 hover:bg-white/70'
+                        }`}
+                      >
+                        <Underline className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
                     <div className="flex items-center p-0.5 bg-stone-100 rounded-md border border-stone-200/80">
                       {(
                         [
@@ -1069,14 +1860,14 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
                           activeTextTarget
                         )
                       }
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-all flex items-center gap-1.5 ${
+                      className={`px-2 py-1 text-xs font-medium rounded-md border transition-all flex items-center gap-1 ${
                         activeStyle.textTransform === 'uppercase'
                           ? 'border-stone-900 bg-stone-900 text-white shadow-2xs'
                           : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-stone-300'
                       }`}
+                      title="Toggle ALL CAPS"
                     >
-                      <span className="font-mono text-[10px] uppercase font-bold tracking-wider">AA</span>
-                      <span>ALL CAPS</span>
+                      <span className="font-mono text-[10px] uppercase font-bold">AA</span>
                     </button>
                   </div>
 

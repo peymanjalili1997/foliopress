@@ -38,7 +38,6 @@ import { PdfExportModal } from './components/PdfExportModal';
 import { PresentationView } from './components/PresentationView';
 import { StarterKitsModal } from './components/StarterKitsModal';
 import { StockLibraryModal } from './components/StockLibraryModal';
-import { TextFormatToolbar } from './components/TextFormatToolbar';
 import {
   createBlocksForTemplate,
   createUid,
@@ -1255,6 +1254,21 @@ export default function App() {
             type="button"
             onClick={() => {
               setWorkspaceMode('single');
+              setInspectorTab('blocks');
+            }}
+            className={`hover:text-stone-950 transition-colors whitespace-nowrap shrink-0 py-1 flex items-center gap-1 ${
+              inspectorTab === 'blocks' && workspaceMode === 'single'
+                ? 'text-stone-950 underline underline-offset-4 decoration-stone-900 decoration-1 font-semibold'
+                : ''
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5 text-amber-600" />
+            <span>Blocks</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setWorkspaceMode('single');
               setInspectorTab('page');
             }}
             className={`hover:text-stone-950 transition-colors whitespace-nowrap shrink-0 py-1 ${
@@ -1373,21 +1387,6 @@ export default function App() {
           </button>
         </div>
       </header>
-
-      {/* Typography & Block Insertion Ribbon (Hidden in Full Clean Preview) */}
-      {workspaceMode !== 'preview' && (
-        <div className="no-print shrink-0">
-          <TextFormatToolbar
-            selectedBlock={selectedBlock}
-            activeTextTarget={activeTextTarget}
-            onSelectTextTarget={setActiveTextTarget}
-            onUpdateTextStyle={handleUpdateTextStyle}
-            onAddBlock={handleAddBlock}
-            onAiPolishText={handleAiPolishText}
-            defaultHeadingFont={globalSettings.headingFont}
-          />
-        </div>
-      )}
 
       {/* Main 3-Column Studio Workspace */}
       <div className="flex-1 flex min-h-0 overflow-hidden no-print">
@@ -1850,7 +1849,7 @@ export default function App() {
           </div>
         </main>
 
-        {/* RIGHT SIDEBAR: Element, Page Template & Global Formatting Inspector */}
+        {/* RIGHT SIDEBAR: Blocks, Element, Page Template & Global Formatting Inspector */}
         {workspaceMode !== 'preview' && (
           <InspectorSidebar
             activeTab={inspectorTab}
@@ -1861,6 +1860,9 @@ export default function App() {
             onSelectTextTarget={setActiveTextTarget}
             globalSettings={globalSettings}
             onUpdateBlock={handleUpdateBlock}
+            onMoveBlock={handleMoveBlock}
+            onDuplicateBlock={handleDuplicateBlock}
+            onDeleteBlock={handleDeleteBlock}
             onUpdateTextStyle={handleUpdateTextStyle}
             onUpdateImageStyle={handleUpdateImageStyle}
             onUpdatePage={handleUpdatePage}
@@ -1869,6 +1871,8 @@ export default function App() {
             onUpdateGlobalSettings={handleUpdateGlobalSettings}
             onApplyGlobalFontsToAllPages={handleApplyGlobalFontsToAllPages}
             onOpenStockLibrary={() => setIsStockLibraryOpen(true)}
+            onAddBlock={handleAddBlock}
+            onAiPolishText={handleAiPolishText}
           />
         )}
       </div>
